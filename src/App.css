@@ -1,0 +1,738 @@
+.page-shell {
+  width: min(1400px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 28px 0 96px;
+}
+
+.page-shell--center {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+}
+
+.hero-panel,
+.paper-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(250, 246, 236, 0.96)),
+    var(--paper);
+  box-shadow: var(--shadow-soft);
+}
+
+.hero-panel::before,
+.paper-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(130deg, rgba(241, 233, 220, 0.55), transparent 30%),
+    linear-gradient(0deg, rgba(111, 124, 108, 0.05), transparent 35%);
+  pointer-events: none;
+}
+
+.hero-panel {
+  padding: 32px;
+  border-radius: 28px;
+  margin-bottom: 22px;
+}
+
+.hero-panel__topline,
+.hero-panel__content,
+.metric-grid,
+.group-grid,
+.method-grid,
+.team-columns,
+.toolbar,
+.source-list {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-panel__topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.hero-panel__topline nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hero-panel__topline a,
+.source-list a,
+.injury-list a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.hero-panel__topline a {
+  padding: 8px 12px;
+  border: 1px solid rgba(87, 96, 80, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  transition:
+    transform 180ms ease,
+    background 180ms ease;
+}
+
+.hero-panel__topline a:hover,
+.source-list a:hover,
+.injury-list a:hover {
+  transform: translateY(-1px);
+}
+
+.hero-panel__content {
+  display: grid;
+  grid-template-columns: 1.45fr minmax(280px, 420px);
+  gap: 28px;
+}
+
+.hero-panel__copy {
+  max-width: 72ch;
+  font-size: 1.05rem;
+}
+
+.hero-panel__note {
+  margin-top: 18px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.hero-panel__aside {
+  display: flex;
+  align-items: stretch;
+}
+
+.hero-rankings {
+  width: 100%;
+  border-left: 1px solid rgba(95, 92, 75, 0.14);
+  padding-left: 24px;
+}
+
+.hero-rankings ol {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.hero-rankings li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(98, 93, 74, 0.08);
+}
+
+.hero-rankings strong,
+.hero-rankings span,
+.hero-rankings em {
+  font-style: normal;
+}
+
+.hero-rankings em {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.metric-grid,
+.group-grid,
+.method-grid,
+.team-columns,
+.team-columns--secondary,
+.injury-card-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.metric-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 22px;
+}
+
+.metric-card {
+  padding: 18px 18px 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(95, 92, 75, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(252, 249, 241, 0.95));
+}
+
+.metric-card strong {
+  display: block;
+  margin: 10px 0 8px;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.metric-card p {
+  color: var(--muted);
+}
+
+.paper-card {
+  border-radius: 28px;
+  padding: 28px;
+  margin-bottom: 22px;
+}
+
+.paper-card--soft {
+  margin-bottom: 0;
+  padding: 22px;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(250, 247, 239, 0.94)),
+    var(--paper-soft);
+}
+
+.paper-card--loading,
+.paper-card--error {
+  width: min(760px, 100%);
+}
+
+.paper-card--loading h1,
+.paper-card--error h1 {
+  margin-bottom: 12px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-end;
+  margin-bottom: 24px;
+}
+
+.section-head--compact {
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.section-head p,
+.section-head--compact p {
+  max-width: 46ch;
+  color: var(--muted);
+}
+
+.eyebrow,
+.team-sheet__rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+
+.eyebrow::before {
+  content: '';
+  width: 22px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.65;
+}
+
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(220px, 280px);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.toolbar label {
+  display: grid;
+  gap: 8px;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.toolbar input,
+.toolbar select {
+  width: 100%;
+  border: 1px solid rgba(99, 97, 79, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 14px 16px;
+  font: inherit;
+  color: var(--ink);
+  box-sizing: border-box;
+}
+
+.toolbar input:focus,
+.toolbar select:focus {
+  outline: 2px solid rgba(64, 84, 74, 0.18);
+  border-color: rgba(64, 84, 74, 0.32);
+}
+
+.group-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.group-card {
+  padding: 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(95, 92, 75, 0.12);
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.table-scroll {
+  overflow-x: auto;
+  margin: 0 -4px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.table--compact {
+  min-width: 0;
+}
+
+.table th,
+.table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid rgba(96, 91, 73, 0.1);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table th {
+  font-size: 0.86rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.table td strong {
+  color: var(--ink);
+}
+
+.table--ranking td:nth-child(3),
+.table--ranking td:nth-child(4),
+.table--ranking td:nth-child(5) {
+  font-variant-numeric: tabular-nums;
+}
+
+.team-inline,
+.team-sheet__identity,
+.team-sheet__summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.team-inline img,
+.team-sheet__identity img {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(99, 97, 79, 0.12);
+}
+
+.team-inline span,
+.team-sheet__summary p,
+.player-cell span,
+.injury-card span {
+  color: var(--muted);
+}
+
+.fixture-list,
+.injury-list,
+.note-list,
+.chip-row {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fixture-list {
+  display: grid;
+  gap: 12px;
+}
+
+.fixture-list--tight {
+  margin-top: 18px;
+  gap: 10px;
+}
+
+.fixture-list li {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed rgba(98, 92, 76, 0.14);
+}
+
+.fixture-list strong,
+.injury-list strong,
+.injury-card h3 {
+  color: var(--ink);
+}
+
+.fixture-list span,
+.fixture-list em {
+  color: var(--muted);
+  font-style: normal;
+}
+
+.team-sheet-list {
+  display: grid;
+  gap: 14px;
+}
+
+.team-sheet {
+  border: 1px solid rgba(94, 92, 75, 0.12);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(248, 243, 232, 0.9));
+}
+
+.team-sheet summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 20px 22px;
+}
+
+.team-sheet summary::-webkit-details-marker {
+  display: none;
+}
+
+.team-sheet__summary {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.team-sheet__identity {
+  align-items: flex-start;
+}
+
+.team-sheet__identity img {
+  width: 38px;
+  height: 38px;
+  margin-top: 6px;
+}
+
+.team-sheet__identity h3 {
+  margin: 6px 0 4px;
+}
+
+.team-sheet__score {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  min-width: 112px;
+}
+
+.team-sheet__score strong {
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.team-sheet__body {
+  padding: 0 22px 22px;
+  display: grid;
+  gap: 16px;
+}
+
+.fact-grid,
+.team-columns,
+.team-columns--secondary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.team-columns {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.team-columns--secondary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.breakdown-list {
+  display: grid;
+  gap: 10px;
+}
+
+.breakdown-bar {
+  display: grid;
+  gap: 6px;
+}
+
+.breakdown-bar__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.92rem;
+}
+
+.breakdown-bar__track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(82, 96, 84, 0.11);
+  overflow: hidden;
+}
+
+.breakdown-bar__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.chip-row li {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(97, 93, 74, 0.1);
+  color: var(--muted);
+}
+
+.stat-list {
+  display: grid;
+  gap: 12px;
+}
+
+.stat-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed rgba(98, 92, 76, 0.14);
+}
+
+.stat-list dt {
+  color: var(--muted);
+}
+
+.stat-list dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.key-player-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.key-player-list article {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.key-player-list span,
+.key-player-list em {
+  color: var(--muted);
+  font-style: normal;
+}
+
+.injury-list {
+  display: grid;
+  gap: 12px;
+}
+
+.injury-list li {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(133, 94, 80, 0.12);
+}
+
+.injury-list li > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.injury-card-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.injury-card {
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(129, 87, 79, 0.14);
+}
+
+.injury-card__status {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.player-cell {
+  display: grid;
+  gap: 2px;
+}
+
+.method-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.note-list {
+  display: grid;
+  gap: 10px;
+}
+
+.note-list li {
+  padding-left: 18px;
+  position: relative;
+}
+
+.note-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(63, 84, 74, 0.58);
+}
+
+.source-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.source-list a {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(96, 92, 74, 0.1);
+}
+
+.source-list span {
+  color: var(--muted);
+  text-transform: capitalize;
+}
+
+.empty-copy {
+  color: var(--muted);
+}
+
+.rise-in {
+  animation: rise-in 600ms ease both;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1120px) {
+  .hero-panel__content,
+  .metric-grid,
+  .group-grid,
+  .team-columns,
+  .team-columns--secondary,
+  .method-grid,
+  .source-list,
+  .injury-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero-panel__aside {
+    display: block;
+  }
+
+  .hero-rankings {
+    border-left: 0;
+    border-top: 1px solid rgba(95, 92, 75, 0.14);
+    padding-left: 0;
+    padding-top: 20px;
+  }
+
+  .fact-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 780px) {
+  .page-shell {
+    width: calc(100% - 20px);
+    padding-top: 16px;
+  }
+
+  .hero-panel,
+  .paper-card {
+    padding: 20px;
+    border-radius: 22px;
+  }
+
+  .hero-panel__topline,
+  .hero-panel__content,
+  .section-head,
+  .toolbar,
+  .metric-grid,
+  .group-grid,
+  .team-columns,
+  .team-columns--secondary,
+  .fact-grid,
+  .method-grid,
+  .source-list,
+  .injury-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-panel__topline {
+    display: grid;
+  }
+
+  .hero-panel__topline nav {
+    gap: 10px;
+  }
+
+  .section-head {
+    align-items: flex-start;
+  }
+
+  .team-sheet summary {
+    padding: 18px;
+  }
+
+  .team-sheet__summary {
+    display: grid;
+    gap: 14px;
+  }
+
+  .team-sheet__score {
+    justify-items: start;
+  }
+
+  .table {
+    min-width: 640px;
+  }
+}

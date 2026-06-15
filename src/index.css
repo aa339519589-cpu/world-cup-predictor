@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;600;700&display=swap');
+
+:root {
+  --paper: #f4efe5;
+  --paper-soft: #faf6ed;
+  --ink: #1f2a2a;
+  --muted: #6d655a;
+  --line: rgba(92, 87, 71, 0.16);
+  --accent: #6f8070;
+  --accent-strong: #355049;
+  --accent-ink: #41564d;
+  --danger: #8f5146;
+  --shadow-soft:
+    0 14px 36px rgba(67, 58, 43, 0.08),
+    0 2px 6px rgba(67, 58, 43, 0.04);
+  color: var(--ink);
+  font: 16px/1.7 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+  letter-spacing: 0.01em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.82), transparent 32%),
+    radial-gradient(circle at 80% 20%, rgba(185, 195, 174, 0.18), transparent 28%),
+    repeating-linear-gradient(
+      180deg,
+      rgba(108, 98, 80, 0.03),
+      rgba(108, 98, 80, 0.03) 1px,
+      transparent 1px,
+      transparent 38px
+    ),
+    linear-gradient(180deg, #f7f3ea, #efe7d6 72%, #ede4d4);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(255, 255, 255, 0.28), transparent 0.7%),
+    radial-gradient(circle at 68% 42%, rgba(255, 255, 255, 0.18), transparent 0.7%);
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+a {
+  color: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+h1 {
+  font-size: clamp(2.5rem, 4vw, 4.6rem);
+  max-width: 12ch;
+}
+
+h2 {
+  font-size: clamp(1.65rem, 2.4vw, 2.6rem);
+}
+
+h3 {
+  font-size: 1.25rem;
+}
+
+h4 {
+  font-size: 1.05rem;
+}
+
+p {
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+#root {
+  min-height: 100svh;
+}
