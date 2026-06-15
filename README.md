@@ -1,73 +1,47 @@
-# React + TypeScript + Vite
+# 世界杯实时概率情报台
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript 的世界杯多模型概率引擎。它输出概率分布，不输出确定比分。
 
-Currently, two official plugins are available:
+## 数据策略
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- FIFA 数据：赛程、参赛队、报名名单、历史世界杯成绩。
+- ESPN：整届 104 场赛程、实时比分和新闻。
+- Open-Meteo：绑定到具体赛程时的公开天气预报。
+- The Odds API：可选。没有 `THE_ODDS_API_KEY` 时明确标记 `not_configured`，市场模型权重为 0。
+- API-Football、Sportmonks、Sportradar：预留适配器；未授权时不参与计算。
 
-## React Compiler
+## 模型
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Elo / 排名强度
+- Poisson 0-6+ 比分分布
+- 技术统计代理模型
+- 阵容与伤停模型
+- 市场赔率去水模型
+- 动态权重 ensemble
 
-## Expanding the ESLint configuration
+所有比分市场均由同一份校准后的比分矩阵汇总，保证胜平负、让球、大小球和双方进球概率一致。
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 本地运行
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run data:all
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+构建与检查：
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
+npm run lint
 ```
+
+## JSON API
+
+构建后可直接访问：
+
+- `/api/predictions.json`
+- `/api/matches.json`
+- `/api/odds.json`
+
+GitHub Actions 每 10 分钟刷新数据、重建 API 并部署 GitHub Pages。

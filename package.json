@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "data:refresh": "python3 scripts/build_worldcup_data.py",
+    "data:market": "python3 scripts/build_market_data.py",
+    "api:build": "tsx scripts/build_prediction_api.ts",
+    "data:all": "python3 scripts/build_live_data.py && python3 scripts/build_market_data.py && npm run api:build",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -24,6 +27,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
+    "tsx": "^4.22.4",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12"

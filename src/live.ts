@@ -18,16 +18,8 @@ function text(value: unknown) {
   return typeof value === 'string' ? value : ''
 }
 
-function dateKey(date: Date) {
-  return date.toISOString().slice(0, 10).replaceAll('-', '')
-}
-
 function dateRange() {
-  const start = new Date()
-  start.setUTCDate(start.getUTCDate() - 1)
-  const end = new Date()
-  end.setUTCDate(end.getUTCDate() + 4)
-  return `${dateKey(start)}-${dateKey(end)}`
+  return '20260611-20260719'
 }
 
 function teamName(code: string, fallback: string, teams: TeamData[]) {
@@ -147,7 +139,7 @@ async function translateArticles(articles: LiveArticle[]) {
 export async function loadLiveData(teams: TeamData[]): Promise<LiveData> {
   try {
     const [scoreboard, news] = await Promise.all([
-      fetchJson(`${SCOREBOARD_API}?limit=100&dates=${dateRange()}`),
+      fetchJson(`${SCOREBOARD_API}?limit=200&dates=${dateRange()}`),
       fetchJson(NEWS_API),
     ])
     return {

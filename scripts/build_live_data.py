@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
@@ -24,10 +24,7 @@ def fetch_json(url: str) -> dict[str, Any]:
 
 
 def date_range() -> str:
-    now = datetime.now(timezone.utc)
-    start = now - timedelta(days=1)
-    end = now + timedelta(days=4)
-    return f"{start:%Y%m%d}-{end:%Y%m%d}"
+    return "20260611-20260719"
 
 
 def translate(text: str) -> str:
@@ -112,7 +109,7 @@ def main() -> None:
     world_data = json.loads(WORLD_DATA_PATH.read_text())
     team_names = {team["code"]: team["name_zh"] for team in world_data["teams"]}
     english_to_chinese = {team["name_en"].lower(): team["name_zh"] for team in world_data["teams"]}
-    scoreboard = fetch_json(f"{SCOREBOARD_API}?limit=100&dates={date_range()}")
+    scoreboard = fetch_json(f"{SCOREBOARD_API}?limit=200&dates={date_range()}")
     news = fetch_json(NEWS_API)
     output = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),

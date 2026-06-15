@@ -30,6 +30,10 @@ jobs:
           python-version: '3.12'
       - run: npm ci
       - run: python3 scripts/build_live_data.py
+      - run: python3 scripts/build_market_data.py
+        env:
+          THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+      - run: npm run api:build
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

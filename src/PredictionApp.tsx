@@ -1,7 +1,18 @@
 import { startTransition, useDeferredValue, useEffect, useState } from 'react'
 import './PredictionApp.css'
+import { findMatch } from './api/matches'
+import { refreshInterval } from './api/refresh'
+import { DataSourcePanel } from './components/DataSourcePanel'
+import { MatchCard } from './components/MatchCard'
+import { OddsComparison } from './components/OddsComparison'
+import { ProbabilityBars } from './components/ProbabilityBars'
+import { RiskFlags } from './components/RiskFlags'
+import { ScoreMatrix } from './components/ScoreMatrix'
+import { loadOddsData } from './dataSources/oddsApi'
+import { loadWeather } from './dataSources/weather'
 import { loadLiveData } from './live'
-import { buildPrediction, type Prediction, type Stage } from './prediction'
+import { buildPrediction, predictionToJson, type Prediction, type Stage } from './prediction'
+import type { OddsData, WeatherData } from './engineTypes'
 import type { LiveArticle, LiveData, LiveMatch, TeamData, WorldCupData } from './types'
 
 type Route = 'home' | 'predict' | 'matches' | 'teams' | `team/${string}`
@@ -33,16 +44,6 @@ function getRoute(): Route {
 function navigate(route: Route) {
   window.location.hash = route
   window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-function statusText(match: LiveMatch) {
-  if (match.state === 'in') return match.clock ? `进行中 ${match.clock}` : '正在直播'
-  if (match.state === 'post') return '已结束'
-  return chinaTime.format(new Date(match.date_utc)).replace(',', '')
-}
-
-function matchScore(match: LiveMatch) {
-  return match.state === 'pre' ? 'VS' : `${match.home.score} : ${match.away.score}`
 }
 
 function eventPriority(match: LiveMatch, teams: TeamData[]) {
@@ -101,38 +102,6 @@ function FootballScene() {
   )
 }
 
-function MatchCard(props: {
-  match: LiveMatch
-  featured?: boolean
-  onPredict: (home: string, away: string) => void
-}) {
-  return (
-    <article className={`match-card ${props.featured ? 'match-card--featured' : ''} ${props.match.state === 'in' ? 'is-live' : ''}`}>
-      <div className="match-card__meta">
-        <span className={props.match.state === 'in' ? 'live-label' : ''}>{statusText(props.match)}</span>
-        <span>{props.match.city || '世界杯赛场'}</span>
-      </div>
-      <div className="match-card__teams">
-        <div>
-          <img src={props.match.home.logo} alt="" />
-          <strong>{props.match.home.name_zh}</strong>
-        </div>
-        <b>{matchScore(props.match)}</b>
-        <div>
-          <img src={props.match.away.logo} alt="" />
-          <strong>{props.match.away.name_zh}</strong>
-        </div>
-      </div>
-      <div className="match-card__footer">
-        <span>{props.match.venue || '场地待确认'}</span>
-        <button type="button" onClick={() => props.onPredict(props.match.home.code, props.match.away.code)}>
-          预测这场
-        </button>
-      </div>
-    </article>
-  )
-}
-
 function NewsCard({ article, large = false }: { article: LiveArticle; large?: boolean }) {
   return (
     <a className={`news-card ${large ? 'news-card--large' : ''}`} href={article.url} target="_blank" rel="noreferrer">
@@ -161,15 +130,6 @@ function LiveTicker({ matches }: { matches: LiveMatch[] }) {
           ))}
         </div>
       </div>
-    </div>
-  )
-}
-
-function ProbabilityBar({ label, value, tone }: { label: string; value: number; tone: string }) {
-  return (
-    <div className="probability-row">
-      <div><span>{label}</span><strong>{percent.format(value)}</strong></div>
-      <div className="probability-track"><i className={tone} style={{ width: `${value * 100}%` }} /></div>
     </div>
   )
 }
@@ -205,7 +165,7 @@ function HomePage(props: {
         <div className="hero-scoreboard">
           <span>数据状态</span>
           <strong>{props.live.source === 'live' ? 'LIVE' : '快照'}</strong>
-          <p>{props.data.tournament.matches_completed} 场已完成</p>
+          <p>{props.live.matches.filter((match) => match.state === 'post').length} 场已完成</p>
           <small>最近同步 {shortTime.format(new Date(props.live.generated_at_utc))}</small>
         </div>
       </section>
@@ -236,44 +196,101 @@ function HomePage(props: {
 }
 
 function PredictionResult({ prediction }: { prediction: Prediction }) {
+  const [jsonOpen, setJsonOpen] = useState(false)
+  const json = JSON.stringify(predictionToJson(prediction), null, 2)
+  const matchMeta = prediction.match
   return (
-    <div className="prediction-result">
-      <div className="prediction-result__headline">
+    <div className="prediction-result intelligence-board">
+      <section className="prediction-result__headline intel-hero">
         <div>
-          <span className="overline">90 分钟预测</span>
+          <span className="overline">LIVE PROBABILITY INTELLIGENCE</span>
           <h2>{prediction.headline}</h2>
           <p>{prediction.detail}</p>
+          <div className="intel-meta">
+            <span>{matchMeta ? chinaTime.format(new Date(matchMeta.date_utc)).replace(',', '') : '自定义对阵'}</span>
+            <span>{prediction.stage === 'knockout' ? '淘汰赛模型' : '小组赛模型'}</span>
+            <span>{matchMeta?.venue || '中立场 / 场地未绑定'}</span>
+            <span>更新 {shortTime.format(new Date(prediction.updatedAt))}</span>
+          </div>
         </div>
         <div className="confidence-ring" style={{ '--confidence': `${prediction.confidence * 360}deg` } as React.CSSProperties}>
           <strong>{percent.format(prediction.confidence)}</strong><span>模型信心</span>
         </div>
-      </div>
+      </section>
 
       <div className="versus-board">
         <div><img src={prediction.home.flag_url} alt="" /><strong>{prediction.home.name_zh}</strong></div>
-        <div><span>预期进球</span><b>{number.format(prediction.homeExpectedGoals)} <em>:</em> {number.format(prediction.awayExpectedGoals)}</b></div>
+        <div><span>进球期望代理 λ</span><b>{number.format(prediction.homeExpectedGoals)} <em>:</em> {number.format(prediction.awayExpectedGoals)}</b><small>非授权 xG 数据</small></div>
         <div><img src={prediction.away.flag_url} alt="" /><strong>{prediction.away.name_zh}</strong></div>
       </div>
 
-      <div className="result-grid">
-        <div className="probability-card">
-          <h3>胜平负概率</h3>
-          <ProbabilityBar label={`${prediction.home.name_zh} 胜`} value={prediction.homeWin} tone="tone-home" />
-          <ProbabilityBar label="平局" value={prediction.draw} tone="tone-draw" />
-          <ProbabilityBar label={`${prediction.away.name_zh} 胜`} value={prediction.awayWin} tone="tone-away" />
-        </div>
-        <div className="score-radar">
-          <h3>最可能比分</h3>
-          <div>{prediction.scorelines.map((row, index) => (
-            <article className={index === 0 ? 'is-top' : ''} key={`${row.homeGoals}-${row.awayGoals}`}>
-              <strong>{row.homeGoals}-{row.awayGoals}</strong><span>{percent.format(row.probability)}</span>
-            </article>
-          ))}</div>
-        </div>
+      <div className="analysis-grid analysis-grid--markets">
+        <ProbabilityBars prediction={prediction} />
+        <section className="analysis-card mini-markets">
+          <div className="analysis-card__heading"><span>02</span><div><strong>让球胜平负</strong><small>{prediction.home.name_zh} -1</small></div></div>
+          <div className="market-triple">
+            <article><span>主队赢盘</span><strong>{percent.format(prediction.handicap.homeCover)}</strong></article>
+            <article><span>走盘</span><strong>{percent.format(prediction.handicap.push)}</strong></article>
+            <article><span>客队赢盘</span><strong>{percent.format(prediction.handicap.awayCover)}</strong></article>
+          </div>
+        </section>
+        <section className="analysis-card mini-markets">
+          <div className="analysis-card__heading"><span>03</span><div><strong>进球市场</strong><small>由完整比分矩阵汇总</small></div></div>
+          <div className="market-dual">
+            <article><span>大 2.5</span><strong>{percent.format(prediction.goalMarkets.over25)}</strong></article>
+            <article><span>小 2.5</span><strong>{percent.format(prediction.goalMarkets.under25)}</strong></article>
+            <article><span>双方进球 是</span><strong>{percent.format(prediction.goalMarkets.bttsYes)}</strong></article>
+            <article><span>双方进球 否</span><strong>{percent.format(prediction.goalMarkets.bttsNo)}</strong></article>
+          </div>
+        </section>
+        <section className="analysis-card risk-summary">
+          <div className="analysis-card__heading"><span>04</span><div><strong>不确定性</strong><small>不要把最高概率理解成必然</small></div></div>
+          <div><span>爆冷概率</span><strong>{percent.format(prediction.upsetProbability)}</strong></div>
+          <div><span>平局风险</span><strong>{prediction.drawRisk === 'high' ? '高' : prediction.drawRisk === 'medium' ? '中' : '低'}</strong></div>
+          <div><span>Top 比分概率</span><strong>{percent.format(prediction.scorelines[0].probability)}</strong></div>
+        </section>
       </div>
 
+      <div className="analysis-grid analysis-grid--deep">
+        <ScoreMatrix prediction={prediction} />
+        <section className="analysis-card top-scores-card">
+          <div className="analysis-card__heading"><span>TOP 10</span><div><strong>最可能比分</strong><small>单个比分通常只有一成左右</small></div></div>
+          <div className="top-score-list">
+            {prediction.scorelines.map((row, index) => (
+              <article key={`${row.homeGoals}-${row.awayGoals}`}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <strong>{row.homeGoals}-{row.awayGoals}</strong>
+                <div><i style={{ width: `${row.probability / prediction.scorelines[0].probability * 100}%` }} /></div>
+                <b>{percent.format(row.probability)}</b>
+                <small>{row.homeGoals === row.awayGoals ? '平局路径' : row.homeGoals > row.awayGoals ? `${prediction.home.name_zh}取胜路径` : `${prediction.away.name_zh}取胜路径`}</small>
+              </article>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <div className="analysis-grid analysis-grid--deep">
+        <OddsComparison prediction={prediction} />
+        <RiskFlags prediction={prediction} />
+      </div>
+
+      <section className="analysis-card model-card">
+        <div className="analysis-card__heading"><span>09</span><div><strong>五模型融合</strong><small>权重随数据质量和赛前时间动态变化</small></div></div>
+        <div className="model-grid">
+          {prediction.models.map((model) => (
+            <article className={!model.available ? 'is-disabled' : ''} key={model.id}>
+              <div><strong>{model.label}</strong><span>{model.available ? percent.format(prediction.modelWeights[model.id]) : '未参与'}</span></div>
+              <p>{model.detail}</p>
+              {model.available ? <small>主 {percent.format(model.homeWin)} · 平 {percent.format(model.draw)} · 客 {percent.format(model.awayWin)}</small> : null}
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <DataSourcePanel prediction={prediction} />
+
       <section className="reason-section">
-        <div className="section-title"><div><span className="overline">WHY</span><h2>为什么是这个结果</h2></div></div>
+        <div className="section-title"><div><span className="overline">EVIDENCE</span><h2>关键证据差</h2></div></div>
         <div className="reason-grid">
           {prediction.factors.slice(0, 6).map((factor) => {
             const homeEdge = factor.delta >= 0
@@ -291,6 +308,13 @@ function PredictionResult({ prediction }: { prediction: Prediction }) {
           })}
         </div>
       </section>
+
+      <section className="analysis-card verdict-card">
+        <div><span className="overline">FINAL DISTRIBUTION</span><h3>{prediction.finalVerdict.mostLikelyResult}</h3><p>最可能比分 {prediction.finalVerdict.mostLikelyScore}</p></div>
+        <strong>{prediction.finalVerdict.safeRange}</strong>
+        <button type="button" onClick={() => setJsonOpen((open) => !open)}>{jsonOpen ? '收起 JSON' : '查看 JSON API 输出'}</button>
+      </section>
+      {jsonOpen ? <pre className="prediction-json">{json}</pre> : null}
     </div>
   )
 }
@@ -409,6 +433,8 @@ export default function App() {
   const [awayCode, setAwayCode] = useState('FRA')
   const [stage, setStage] = useState<Stage>('group')
   const [prediction, setPrediction] = useState<Prediction | null>(null)
+  const [odds, setOdds] = useState<OddsData | null>(null)
+  const [weather, setWeather] = useState<WeatherData | undefined>()
 
   useEffect(() => {
     const handleHash = () => setRoute(getRoute())
@@ -428,7 +454,6 @@ export default function App() {
         const second = payload.overview.top_contenders[1]?.code ?? payload.teams[1].code
         setHomeCode(first)
         setAwayCode(second)
-        setPrediction(buildPrediction(payload, first, second, 'group'))
       })
       .catch((reason) => setError(reason instanceof Error ? reason.message : '核心数据载入失败'))
   }, [])
@@ -436,21 +461,72 @@ export default function App() {
   useEffect(() => {
     if (!data) return
     let active = true
-    const refresh = () => loadLiveData(data.teams).then((payload) => active && setLive(payload)).catch(() => {})
-    refresh()
-    const timer = window.setInterval(refresh, 60_000)
+    let timer = 0
+    const refresh = () => loadLiveData(data.teams).then((payload) => {
+      if (!active) return
+      setLive(payload)
+      timer = window.setTimeout(refresh, refreshInterval(payload.matches))
+    }).catch(() => {
+      if (active) timer = window.setTimeout(refresh, 60_000)
+    })
+    void refresh()
     return () => {
       active = false
-      window.clearInterval(timer)
+      window.clearTimeout(timer)
     }
   }, [data])
 
+  useEffect(() => {
+    let active = true
+    let timer = 0
+    const refresh = () => loadOddsData().then((payload) => {
+      if (!active) return
+      setOdds(payload)
+      const next = live?.matches.find((match) => match.state !== 'post')
+      const hours = next ? (new Date(next.date_utc).getTime() - Date.now()) / 3_600_000 : 24
+      timer = window.setTimeout(refresh, hours <= 3 ? 5 * 60_000 : 15 * 60_000)
+    })
+    void refresh()
+    return () => {
+      active = false
+      window.clearTimeout(timer)
+    }
+  }, [live?.matches])
+
+  function createPrediction(home: string, away: string, nextWeather = weather) {
+    if (!data || !live) return null
+    const homeTeam = data.teams.find((team) => team.code === home)
+    const awayTeam = data.teams.find((team) => team.code === away)
+    if (!homeTeam || !awayTeam || home === away) return null
+    return buildPrediction({
+      data,
+      live,
+      home: homeTeam,
+      away: awayTeam,
+      stage,
+      match: findMatch(live.matches, home, away),
+      odds: odds ?? undefined,
+      weather: nextWeather,
+    })
+  }
+
   function runPrediction(home = homeCode, away = awayCode) {
-    if (!data) return
+    if (!data || !live) return
+    const match = findMatch(live.matches, home, away)
+    const pendingWeather: WeatherData | undefined = match
+      ? { status: 'loading', updatedAt: '', detail: '正在获取比赛地天气预报。' }
+      : undefined
     setHomeCode(home)
     setAwayCode(away)
-    setPrediction(buildPrediction(data, home, away, stage))
+    setWeather(pendingWeather)
+    setPrediction(createPrediction(home, away, pendingWeather))
     navigate('predict')
+    if (match) {
+      void loadWeather(match).then((payload) => {
+        setWeather(payload)
+        setPrediction(createPrediction(home, away, payload))
+      })
+    }
   }
 
   if (error) return <main className="loading-screen"><span>数据连接失败</span><h1>页面没有拿到世界杯数据。</h1><p>{error}</p></main>

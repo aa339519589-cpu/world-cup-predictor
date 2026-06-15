@@ -10,7 +10,7 @@ import sys
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from http.client import IncompleteRead
 from pathlib import Path
 from statistics import mean
@@ -40,9 +40,10 @@ CURRENT_SEASON_ID = "285023"
 CURRENT_WORLD_CUP_FROM = "2026-06-11T00:00:00Z"
 CURRENT_WORLD_CUP_TO = "2026-07-20T23:59:59Z"
 RECENT_FORM_FROM = "2024-01-01T00:00:00Z"
-RECENT_FORM_TO = "2026-06-15T23:59:59Z"
-AS_OF_CHINA = "2026-06-15 23:59"
-AS_OF_DATE = date(2026, 6, 15)
+NOW_UTC = datetime.now(UTC)
+RECENT_FORM_TO = NOW_UTC.strftime("%Y-%m-%dT%H:%M:%SZ")
+AS_OF_CHINA = (NOW_UTC + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M")
+AS_OF_DATE = (NOW_UTC + timedelta(hours=8)).date()
 
 ELITE_LEAGUE_COUNTRIES = {"ENG", "ESP", "GER", "ITA", "FRA", "NED", "POR"}
 HOST_CODES = {"CAN", "MEX", "USA"}
