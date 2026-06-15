@@ -1,0 +1,715 @@
+{
+  "generated_at_utc": "2026-06-15T15:27:28.160992Z",
+  "source": "snapshot",
+  "matches": [
+    {
+      "id": "760421",
+      "date_utc": "2026-06-14T04:00Z",
+      "state": "post",
+      "status": "FT",
+      "clock": "90'+6'",
+      "completed": true,
+      "venue": "BC Place",
+      "city": "Vancouver",
+      "home": {
+        "code": "AUS",
+        "name_zh": "澳大利亚",
+        "name_en": "Australia",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/aus.png",
+        "score": 2
+      },
+      "away": {
+        "code": "TUR",
+        "name_zh": "土耳其",
+        "name_en": "Türkiye",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/tur.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760422",
+      "date_utc": "2026-06-14T17:00Z",
+      "state": "post",
+      "status": "FT",
+      "clock": "90'+6'",
+      "completed": true,
+      "venue": "NRG Stadium",
+      "city": "Houston, Texas",
+      "home": {
+        "code": "GER",
+        "name_zh": "德国",
+        "name_en": "Germany",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/ger.png",
+        "score": 7
+      },
+      "away": {
+        "code": "CUW",
+        "name_zh": "库拉索",
+        "name_en": "Curaçao",
+        "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/11678.png",
+        "score": 1
+      }
+    },
+    {
+      "id": "760425",
+      "date_utc": "2026-06-14T20:00Z",
+      "state": "post",
+      "status": "FT",
+      "clock": "90'+6'",
+      "completed": true,
+      "venue": "AT&T Stadium",
+      "city": "Arlington, Texas",
+      "home": {
+        "code": "NED",
+        "name_zh": "荷兰",
+        "name_en": "Netherlands",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/ned.png",
+        "score": 2
+      },
+      "away": {
+        "code": "JPN",
+        "name_zh": "日本",
+        "name_en": "Japan",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/jpn.png",
+        "score": 2
+      }
+    },
+    {
+      "id": "760423",
+      "date_utc": "2026-06-14T23:00Z",
+      "state": "post",
+      "status": "FT",
+      "clock": "90'+8'",
+      "completed": true,
+      "venue": "Lincoln Financial Field",
+      "city": "Philadelphia, Pennsylvania",
+      "home": {
+        "code": "CIV",
+        "name_zh": "科特迪瓦",
+        "name_en": "Ivory Coast",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/civ.png",
+        "score": 1
+      },
+      "away": {
+        "code": "ECU",
+        "name_zh": "厄瓜多尔",
+        "name_en": "Ecuador",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/ecu.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760424",
+      "date_utc": "2026-06-15T02:00Z",
+      "state": "post",
+      "status": "FT",
+      "clock": "90'+6'",
+      "completed": true,
+      "venue": "Estadio BBVA",
+      "city": "Guadalupe",
+      "home": {
+        "code": "SWE",
+        "name_zh": "瑞典",
+        "name_en": "Sweden",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/swe.png",
+        "score": 5
+      },
+      "away": {
+        "code": "TUN",
+        "name_zh": "突尼斯",
+        "name_en": "Tunisia",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/tun.png",
+        "score": 1
+      }
+    },
+    {
+      "id": "760428",
+      "date_utc": "2026-06-15T16:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "Mercedes-Benz Stadium",
+      "city": "Atlanta, Georgia",
+      "home": {
+        "code": "ESP",
+        "name_zh": "西班牙",
+        "name_en": "Spain",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/esp.png",
+        "score": 0
+      },
+      "away": {
+        "code": "CPV",
+        "name_zh": "佛得角",
+        "name_en": "Cape Verde",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/cpv.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760426",
+      "date_utc": "2026-06-15T19:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "Lumen Field",
+      "city": "Seattle, Washington",
+      "home": {
+        "code": "BEL",
+        "name_zh": "比利时",
+        "name_en": "Belgium",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/bel.png",
+        "score": 0
+      },
+      "away": {
+        "code": "EGY",
+        "name_zh": "埃及",
+        "name_en": "Egypt",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/egy.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760429",
+      "date_utc": "2026-06-15T22:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "Hard Rock Stadium",
+      "city": "Miami Gardens, Florida",
+      "home": {
+        "code": "KSA",
+        "name_zh": "沙特阿拉伯",
+        "name_en": "Saudi Arabia",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/ksa.png",
+        "score": 0
+      },
+      "away": {
+        "code": "URU",
+        "name_zh": "乌拉圭",
+        "name_en": "Uruguay",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/uru.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760427",
+      "date_utc": "2026-06-16T01:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "SoFi Stadium",
+      "city": "Inglewood, California",
+      "home": {
+        "code": "IRN",
+        "name_zh": "伊朗",
+        "name_en": "Iran",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/irn.png",
+        "score": 0
+      },
+      "away": {
+        "code": "NZL",
+        "name_zh": "新西兰",
+        "name_en": "New Zealand",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/nzl.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760432",
+      "date_utc": "2026-06-16T19:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "MetLife Stadium",
+      "city": "East Rutherford, New Jersey",
+      "home": {
+        "code": "FRA",
+        "name_zh": "法国",
+        "name_en": "France",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/fra.png",
+        "score": 0
+      },
+      "away": {
+        "code": "SEN",
+        "name_zh": "塞内加尔",
+        "name_en": "Senegal",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/sen.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760430",
+      "date_utc": "2026-06-16T22:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "Gillette Stadium",
+      "city": "Foxborough, Massachusetts",
+      "home": {
+        "code": "IRQ",
+        "name_zh": "伊拉克",
+        "name_en": "Iraq",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/irq.png",
+        "score": 0
+      },
+      "away": {
+        "code": "NOR",
+        "name_zh": "挪威",
+        "name_en": "Norway",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/nor.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760433",
+      "date_utc": "2026-06-17T01:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "GEHA Field at Arrowhead Stadium",
+      "city": "Kansas City, Missouri",
+      "home": {
+        "code": "ARG",
+        "name_zh": "阿根廷",
+        "name_en": "Argentina",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/arg.png",
+        "score": 0
+      },
+      "away": {
+        "code": "ALG",
+        "name_zh": "阿尔及利亚",
+        "name_en": "Algeria",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/alg.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760431",
+      "date_utc": "2026-06-17T04:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "Levi's Stadium",
+      "city": "Santa Clara, California",
+      "home": {
+        "code": "AUT",
+        "name_zh": "奥地利",
+        "name_en": "Austria",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/aut.png",
+        "score": 0
+      },
+      "away": {
+        "code": "JOR",
+        "name_zh": "约旦",
+        "name_en": "Jordan",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/jor.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760435",
+      "date_utc": "2026-06-17T17:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "NRG Stadium",
+      "city": "Houston, Texas",
+      "home": {
+        "code": "POR",
+        "name_zh": "葡萄牙",
+        "name_en": "Portugal",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/por.png",
+        "score": 0
+      },
+      "away": {
+        "code": "COD",
+        "name_zh": "刚果民主共和国",
+        "name_en": "Congo DR",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/rdc.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760437",
+      "date_utc": "2026-06-17T20:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "AT&T Stadium",
+      "city": "Arlington, Texas",
+      "home": {
+        "code": "ENG",
+        "name_zh": "英格兰",
+        "name_en": "England",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/eng.png",
+        "score": 0
+      },
+      "away": {
+        "code": "CRO",
+        "name_zh": "克罗地亚",
+        "name_en": "Croatia",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/cro.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760434",
+      "date_utc": "2026-06-17T23:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "BMO Field",
+      "city": "Toronto",
+      "home": {
+        "code": "GHA",
+        "name_zh": "加纳",
+        "name_en": "Ghana",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/gha.png",
+        "score": 0
+      },
+      "away": {
+        "code": "PAN",
+        "name_zh": "巴拿马",
+        "name_en": "Panama",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/pan.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760436",
+      "date_utc": "2026-06-18T02:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "Estadio Banorte",
+      "city": "Mexico City",
+      "home": {
+        "code": "UZB",
+        "name_zh": "乌兹别克斯坦",
+        "name_en": "Uzbekistan",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/uzb.png",
+        "score": 0
+      },
+      "away": {
+        "code": "COL",
+        "name_zh": "哥伦比亚",
+        "name_en": "Colombia",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/col.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760438",
+      "date_utc": "2026-06-18T16:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "Mercedes-Benz Stadium",
+      "city": "Atlanta, Georgia",
+      "home": {
+        "code": "CZE",
+        "name_zh": "捷克",
+        "name_en": "Czechia",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/cze.png",
+        "score": 0
+      },
+      "away": {
+        "code": "RSA",
+        "name_zh": "南非",
+        "name_en": "South Africa",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/rsa.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760439",
+      "date_utc": "2026-06-18T19:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "SoFi Stadium",
+      "city": "Inglewood, California",
+      "home": {
+        "code": "SUI",
+        "name_zh": "瑞士",
+        "name_en": "Switzerland",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/sui.png",
+        "score": 0
+      },
+      "away": {
+        "code": "BIH",
+        "name_zh": "波斯尼亚和黑塞哥维那",
+        "name_en": "Bosnia-Herzegovina",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/bih.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760440",
+      "date_utc": "2026-06-18T22:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "BC Place",
+      "city": "Vancouver",
+      "home": {
+        "code": "CAN",
+        "name_zh": "加拿大",
+        "name_en": "Canada",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/can.png",
+        "score": 0
+      },
+      "away": {
+        "code": "QAT",
+        "name_zh": "卡塔尔",
+        "name_en": "Qatar",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/qat.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760441",
+      "date_utc": "2026-06-19T01:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "Estadio Akron",
+      "city": "Guadalajara",
+      "home": {
+        "code": "MEX",
+        "name_zh": "墨西哥",
+        "name_en": "Mexico",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/mex.png",
+        "score": 0
+      },
+      "away": {
+        "code": "KOR",
+        "name_zh": "韩国",
+        "name_en": "South Korea",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/kors.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760442",
+      "date_utc": "2026-06-19T19:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "Lumen Field",
+      "city": "Seattle, Washington",
+      "home": {
+        "code": "USA",
+        "name_zh": "美国",
+        "name_en": "United States",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/usa.png",
+        "score": 0
+      },
+      "away": {
+        "code": "AUS",
+        "name_zh": "澳大利亚",
+        "name_en": "Australia",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/aus.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760445",
+      "date_utc": "2026-06-19T22:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "Gillette Stadium",
+      "city": "Foxborough, Massachusetts",
+      "home": {
+        "code": "SCO",
+        "name_zh": "苏格兰",
+        "name_en": "Scotland",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/sco.png",
+        "score": 0
+      },
+      "away": {
+        "code": "MAR",
+        "name_zh": "摩洛哥",
+        "name_en": "Morocco",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/mar.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760444",
+      "date_utc": "2026-06-20T00:30Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "Lincoln Financial Field",
+      "city": "Philadelphia, Pennsylvania",
+      "home": {
+        "code": "BRA",
+        "name_zh": "巴西",
+        "name_en": "Brazil",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/bra.png",
+        "score": 0
+      },
+      "away": {
+        "code": "HAI",
+        "name_zh": "海地",
+        "name_en": "Haiti",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/hai.png",
+        "score": 0
+      }
+    },
+    {
+      "id": "760443",
+      "date_utc": "2026-06-20T03:00Z",
+      "state": "pre",
+      "status": "Scheduled",
+      "clock": "0'",
+      "completed": false,
+      "venue": "Levi's Stadium",
+      "city": "Santa Clara, California",
+      "home": {
+        "code": "TUR",
+        "name_zh": "土耳其",
+        "name_en": "Türkiye",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/tur.png",
+        "score": 0
+      },
+      "away": {
+        "code": "PAR",
+        "name_zh": "巴拉圭",
+        "name_en": "Paraguay",
+        "logo": "https://a.espncdn.com/i/teamlogos/countries/500/par.png",
+        "score": 0
+      }
+    }
+  ],
+  "articles": [
+    {
+      "id": "49072120",
+      "headline": "Why is Sabri Lamouchi set for Tunisia departure?",
+      "headline_zh": "为什么Sabri Lamouchi要出发前往突尼斯？",
+      "description": "Why is Sabri Lamouchi set for Tunisia departure?",
+      "published": "2026-06-15T14:56:48Z",
+      "image": "https://a.espncdn.com/media/motion/2026/0615/dm_260615_COM_SOC_Analysis_Why_is_Sabri_Lamouchi_set_for_Tunisia_departure3F_GLOBAL_2026-06-15/dm_260615_COM_SOC_Analysis_Why_is_Sabri_Lamouchi_set_for_Tunisia_departure3F_GLOBAL_2026-06-15.jpg",
+      "url": "https://www.espn.com/video/clip/_/id/49072120/why-sabri-lamouchi-set-tunisia-departure",
+      "teams": [
+        "瑞典",
+        "突尼斯"
+      ],
+      "source": "ESPN"
+    },
+    {
+      "id": "49072037",
+      "headline": "When animal World Cup predictions go wrong",
+      "headline_zh": "当动物世界杯的预测出错时",
+      "description": "When animal World Cup predictions go wrong",
+      "published": "2026-06-15T14:49:42Z",
+      "image": "https://a.espncdn.com/media/motion/2026/0615/dm_260615_COM_SOC_Misc_When_animal_World_Cup_predictions_go_wrong_20260615_GLOBAL_FIFA_WORLD_CUP/dm_260615_COM_SOC_Misc_When_animal_World_Cup_predictions_go_wrong_20260615_GLOBAL_FIFA_WORLD_CUP.jpg",
+      "url": "https://www.espn.com/video/clip/_/id/49072037/when-animal-world-cup-predictions-go-wrong",
+      "teams": [],
+      "source": "ESPN"
+    },
+    {
+      "id": "49072117",
+      "headline": "Senegal's Nicolas Jackson must use the FIFA World Cup to impress Chelsea, and Xabi Alonso",
+      "headline_zh": "塞内加尔的尼古拉斯·杰克逊必须利用FIFA世界杯给切尔西和哈比·阿隆索留下深刻印象",
+      "description": "Senegal striker Nicolas Jackson may actually fit new Chelsea manager Xabi Alonso's vision for strikers better than many may initially assume. The FIFA World Cup is a chance to prove that.",
+      "published": "2026-06-15T14:53:55Z",
+      "image": "https://a.espncdn.com/photo/2026/0615/r1673561_1296x729_16-9.jpg",
+      "url": "https://www.espn.com/espn/story/_/id/49072117/senegal-nicolas-jackson-use-fifa-world-cup-impress-chelsea-xabi-alonso",
+      "teams": [
+        "塞内加尔",
+        "法国",
+        "Bayern Munich",
+        "Chelsea"
+      ],
+      "source": "ESPN"
+    },
+    {
+      "id": "49071612",
+      "headline": "Virgil van Dijk criticises World Cup hydration breaks",
+      "headline_zh": "维吉尔·范迪克批评世界杯水合作用中断",
+      "description": "Virgil van Dijk has criticised the introduction of hydration breaks at this summer's World Cup.",
+      "published": "2026-06-15T14:13:58Z",
+      "image": "https://a.espncdn.com/photo/2026/0615/r1673537_1296x729_16-9.jpg",
+      "url": "https://www.espn.com/soccer/story/_/id/49071612/virgil-van-dijk-criticises-world-cup-hydration-breaks",
+      "teams": [
+        "荷兰"
+      ],
+      "source": "ESPN"
+    },
+    {
+      "id": "49071185",
+      "headline": "Yan Diomande lives up to hype in Ivory Coast's win vs. Ecuador",
+      "headline_zh": "Yan Diomande在科特迪瓦对厄瓜多尔的胜利中不辜负炒作",
+      "description": "Yan Diomande came into the World Cup with plenty of buzz, with PSG and Liverpool interested in signing him, and his performance Sunday night is going to add fuel to the transfer hype train.",
+      "published": "2026-06-15T14:56:25Z",
+      "image": "https://a.espncdn.com/photo/2026/0615/r1673531_1296x729_16-9.jpg",
+      "url": "https://www.espn.com/soccer/story/_/id/49071185/yan-diomande-lives-hype-ivory-coast-win-vs-ecuador",
+      "teams": [
+        "Ivory Coast",
+        "厄瓜多尔"
+      ],
+      "source": "ESPN"
+    },
+    {
+      "id": "49070405",
+      "headline": "Deserts, tornadoes and a Lewis Capaldi freebie - inside Scotland fan's 3,000-mile World Cup 'Tartan Trek'",
+      "headline_zh": "沙漠、龙卷风和刘易斯·卡帕尔迪免费赠品-在苏格兰球迷的3000英里世界杯“Tartan Trek”中",
+      "description": "Scotland fan Craig Ferguson tells ESPN's Mark Donaldson about his 3,000-mile 'Tartan Trek' across the U.S. and how he raised more than £1 million for charity.",
+      "published": "2026-06-15T14:14:10Z",
+      "image": "https://a.espncdn.com/photo/2026/0615/r1673507_1296x729_16-9.jpg",
+      "url": "https://www.espn.com/soccer/story/_/id/49070405/deserts-tornadoes-lewis-capaldi-freebie-scotland-fan-surreal-3000-mile-world-cup-tartan-trek-craig-ferguson",
+      "teams": [
+        "苏格兰"
+      ],
+      "source": "ESPN"
+    },
+    {
+      "id": "49068445",
+      "headline": "7 reasons Ivory Coast will finally break their World Cup curse after triumph in 2026 opener",
+      "headline_zh": "科特迪瓦在2026年揭幕战中获胜后将最终打破世界杯诅咒的7个原因",
+      "description": "Beyond the three points, here are seven reasons why we're convinced that this is finally the year when the Elephants reach the knockouts.",
+      "published": "2026-06-15T13:46:02Z",
+      "image": "https://a.espncdn.com/photo/2026/0615/r1673315_608x342_16-9.jpg",
+      "url": "https://www.espn.com/espn/story/_/id/49068445/7-reasons-ivory-coast-break-world-cup-curse-triumph-opener-2026",
+      "teams": [
+        "Ivory Coast"
+      ],
+      "source": "ESPN"
+    },
+    {
+      "id": "49071478",
+      "headline": "Sabri Lamouchi expecting sack by Tunisia before next World Cup game - sources",
+      "headline_zh": "Sabri Lamouchi预计在下一场世界杯比赛前被突尼斯解雇-消息来源",
+      "description": "Sabri Lamouchi is expecting to be sacked as Tunisia boss, sources told ESPN.",
+      "published": "2026-06-15T13:51:04Z",
+      "image": "https://a.espncdn.com/photo/2026/0615/r1673517_1296x729_16-9.jpg",
+      "url": "https://www.espn.com/soccer/story/_/id/49071478/sabri-lamouchi-expecting-sack-tunisia-heavy-world-cup-defeat-sources",
+      "teams": [
+        "突尼斯"
+      ],
+      "source": "ESPN"
+    }
+  ]
+}

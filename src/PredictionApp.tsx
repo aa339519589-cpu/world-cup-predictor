@@ -1,67 +1,14 @@
-import {
-  startTransition,
-  useDeferredValue,
-  useEffect,
-  useState,
-} from 'react'
+import { startTransition, useDeferredValue, useEffect, useState } from 'react'
 import './PredictionApp.css'
-import type { TeamData, TeamMatch, WorldCupData } from './types'
+import { loadLiveData } from './live'
+import { buildPrediction, type Prediction, type Stage } from './prediction'
+import type { LiveArticle, LiveData, LiveMatch, TeamData, WorldCupData } from './types'
 
-type Slot = 'home' | 'away'
-type Stage = 'group' | 'knockout'
+type Route = 'home' | 'predict' | 'matches' | 'teams' | `team/${string}`
 
-type SubmittedMatch = {
-  homeCode: string
-  awayCode: string
-  stage: Stage
-}
-
-type FactorRow = {
-  label: string
-  note: string
-  homeValue: number
-  awayValue: number
-  weight: number
-  inverse?: boolean
-  format?: 'number' | 'percent'
-}
-
-type ScorelineRow = {
-  homeGoals: number
-  awayGoals: number
-  probability: number
-}
-
-type Prediction = {
-  home: TeamData
-  away: TeamData
-  stage: Stage
-  factors: Array<FactorRow & { delta: number }>
-  homeExpectedGoals: number
-  awayExpectedGoals: number
-  homeWin: number
-  draw: number
-  awayWin: number
-  scorelines: ScorelineRow[]
-  headline: string
-  detail: string
-}
-
-const percentFormatter = new Intl.NumberFormat('zh-CN', {
-  style: 'percent',
-  maximumFractionDigits: 0,
-})
-
-const finePercentFormatter = new Intl.NumberFormat('zh-CN', {
-  style: 'percent',
-  maximumFractionDigits: 1,
-})
-
-const numberFormatter = new Intl.NumberFormat('zh-CN', {
-  maximumFractionDigits: 1,
-})
-
-const chinaDateFormatter = new Intl.DateTimeFormat('zh-CN', {
+const number = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 1 })
+const percent = new Intl.NumberFormat('zh-CN', { style: 'percent', maximumFractionDigits: 0 })
+const chinaTime = new Intl.DateTimeFormat('zh-CN', {
   month: 'numeric',
   day: 'numeric',
   hour: '2-digit',
@@ -69,981 +16,454 @@ const chinaDateFormatter = new Intl.DateTimeFormat('zh-CN', {
   hour12: false,
   timeZone: 'Asia/Shanghai',
 })
+const shortTime = new Intl.DateTimeFormat('zh-CN', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+  timeZone: 'Asia/Shanghai',
+})
 
-function formatChinaTime(input: string) {
-  return chinaDateFormatter.format(new Date(input)).replace(',', '')
+function getRoute(): Route {
+  const raw = window.location.hash.replace(/^#\/?/, '')
+  if (raw === 'rankings') return 'teams'
+  if (raw === 'predict' || raw === 'matches' || raw === 'teams' || raw.startsWith('team/')) return raw as Route
+  return 'home'
 }
 
-function formatNumber(input: number) {
-  return numberFormatter.format(input)
+function navigate(route: Route) {
+  window.location.hash = route
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-function formatPercent(input: number) {
-  return percentFormatter.format(input)
+function statusText(match: LiveMatch) {
+  if (match.state === 'in') return match.clock ? `进行中 ${match.clock}` : '正在直播'
+  if (match.state === 'post') return '已结束'
+  return chinaTime.format(new Date(match.date_utc)).replace(',', '')
 }
 
-function formatFinePercent(input: number) {
-  return finePercentFormatter.format(input)
+function matchScore(match: LiveMatch) {
+  return match.state === 'pre' ? 'VS' : `${match.home.score} : ${match.away.score}`
 }
 
-function normalizeToken(input: string) {
-  return input.trim().toLowerCase().replace(/\s+/g, '')
+function eventPriority(match: LiveMatch, teams: TeamData[]) {
+  const home = teams.find((team) => team.code === match.home.code)?.model.logic_score ?? 35
+  const away = teams.find((team) => team.code === match.away.code)?.model.logic_score ?? 35
+  const balance = 18 - Math.min(18, Math.abs(home - away))
+  return home + away + balance + (match.state === 'in' ? 50 : 0)
 }
 
-// Keep the call shape readable at the call site: clamp(min, max, value).
-function clamp(min: number, max: number, value: number) {
-  return Math.max(min, Math.min(max, value))
-}
-
-function poissonProbability(mean: number, goals: number) {
-  let factorial = 1
-  for (let index = 2; index <= goals; index += 1) {
-    factorial *= index
-  }
-  return (Math.exp(-mean) * mean ** goals) / factorial
-}
-
-function topReasons(team: TeamData) {
-  return Object.entries(team.model.breakdown)
-    .sort((left, right) => right[1] - left[1])
-    .slice(0, 2)
-    .map(([key]) => key)
-    .join(' + ')
-}
-
-function matchLabel(match: TeamMatch) {
-  if (match.scoreline) {
-    return `${match.opponent_name_zh} ${match.scoreline}`
-  }
-  return `${match.opponent_name_zh} 未开球`
-}
-
-function resolveTeam(data: WorldCupData, rawValue: string) {
-  const token = normalizeToken(rawValue)
-  if (!token) {
-    return null
-  }
-
-  const exactMatch = data.teams.find((team) => {
-    const candidates = [team.name_zh, team.name_en, team.code]
-    return candidates.some((candidate) => normalizeToken(candidate) === token)
+function nextMatches(matches: LiveMatch[], teams: TeamData[]) {
+  const now = Date.now()
+  const horizon = now + 18 * 60 * 60 * 1000
+  const tonight = matches.filter((match) => {
+    const time = new Date(match.date_utc).getTime()
+    return match.state === 'in' || (match.state === 'pre' && time >= now - 30 * 60 * 1000 && time <= horizon)
   })
-  if (exactMatch) {
-    return exactMatch
-  }
-
-  return (
-    data.teams.find((team) => {
-      const candidates = [team.name_zh, team.name_en, team.code, team.group_name_zh, team.model.tier]
-      return candidates.some((candidate) => normalizeToken(candidate).includes(token))
-    }) ?? null
-  )
+  const pool = tonight.length ? tonight : matches.filter((match) => match.state !== 'post' && new Date(match.date_utc).getTime() >= now)
+  return [...pool].sort((left, right) => eventPriority(right, teams) - eventPriority(left, teams)).slice(0, 3)
 }
 
-function formatScoreline(homeGoals: number, awayGoals: number) {
-  return `${homeGoals}-${awayGoals}`
-}
-
-function buildPrediction(data: WorldCupData, submitted: SubmittedMatch): Prediction | null {
-  const home = data.teams.find((team) => team.code === submitted.homeCode)
-  const away = data.teams.find((team) => team.code === submitted.awayCode)
-
-  if (!home || !away) {
-    return null
-  }
-
-  const stageFactor = submitted.stage === 'knockout' ? 0.93 : 1
-  const factors: FactorRow[] = [
-    {
-      label: '逻辑总分',
-      note: '把历史、近况、名单和伤停压成一个总分。',
-      homeValue: home.model.logic_score,
-      awayValue: away.model.logic_score,
-      weight: 0.35,
-      format: 'number',
-    },
-    {
-      label: '历史底盘',
-      note: '世界杯历史场均积分，底线强弱最直观。',
-      homeValue: home.history.ppg,
-      awayValue: away.history.ppg,
-      weight: 8,
-      format: 'number',
-    },
-    {
-      label: '近期状态',
-      note: '近两年加权场均积分，权重更高。',
-      homeValue: home.recent_form.weighted_ppg,
-      awayValue: away.recent_form.weighted_ppg,
-      weight: 10,
-      format: 'number',
-    },
-    {
-      label: '进攻效率',
-      note: '近两年加权场均进球，直接影响进球预期。',
-      homeValue: home.recent_form.weighted_gf_per_match,
-      awayValue: away.recent_form.weighted_gf_per_match,
-      weight: 8,
-      format: 'number',
-    },
-    {
-      label: '防守稳定',
-      note: '近两年加权场均失球，越低越好。',
-      homeValue: home.recent_form.weighted_ga_per_match,
-      awayValue: away.recent_form.weighted_ga_per_match,
-      weight: 8,
-      inverse: true,
-      format: 'number',
-    },
-    {
-      label: '名单厚度',
-      note: '五大 + 葡荷联赛占比，反映高质量对抗覆盖。',
-      homeValue: home.squad.elite_share,
-      awayValue: away.squad.elite_share,
-      weight: 22,
-      format: 'percent',
-    },
-    {
-      label: '老将经验',
-      note: '50场以上国脚占比，淘汰赛尤其重要。',
-      homeValue: home.squad.veteran_share,
-      awayValue: away.squad.veteran_share,
-      weight: 18,
-      format: 'percent',
-    },
-    {
-      label: '伤停负担',
-      note: '关键伤停扣分，越低越好。',
-      homeValue: home.model.injury_penalty,
-      awayValue: away.model.injury_penalty,
-      weight: 1.4,
-      inverse: true,
-      format: 'number',
-    },
-    {
-      label: '赛会走势',
-      note: '本届已赛场均积分，反映真实开局。',
-      homeValue: home.current_tournament.ppg,
-      awayValue: away.current_tournament.ppg,
-      weight: 8.5,
-      format: 'number',
-    },
-    {
-      label: '东道主加成',
-      note: '世界杯主办方只有极少数球队有额外环境优势。',
-      homeValue: home.model.host_bonus,
-      awayValue: away.model.host_bonus,
-      weight: 1,
-      format: 'number',
-    },
-  ]
-
-  const weightedFactors = factors
-    .map((factor) => {
-      const deltaBase = factor.inverse
-        ? factor.awayValue - factor.homeValue
-        : factor.homeValue - factor.awayValue
-      const delta = deltaBase * factor.weight
-      return { ...factor, delta }
-    })
-    .sort((left, right) => Math.abs(right.delta) - Math.abs(left.delta))
-
-  const edgeScore = weightedFactors.reduce((sum, factor) => sum + factor.delta, 0)
-  const totalGoalsBase = clamp(
-    1.8,
-    3,
-    2.05 +
-      (home.recent_form.weighted_gf_per_match + away.recent_form.weighted_gf_per_match - 4) * 0.14 +
-      (home.current_tournament.ppg + away.current_tournament.ppg - 4) * 0.05 -
-      (home.recent_form.weighted_ga_per_match + away.recent_form.weighted_ga_per_match - 2.6) * 0.16,
-  )
-  const totalGoals = totalGoalsBase * stageFactor
-  const shareShift = clamp(-0.18, 0.18, edgeScore / 120)
-  const homeExpectedGoals = clamp(0.35, 3.4, totalGoals * (0.5 + shareShift))
-  const awayExpectedGoals = clamp(0.35, 3.4, totalGoals * (0.5 - shareShift))
-
-  const scoreGrid: ScorelineRow[] = []
-  let gridMass = 0
-
-  for (let homeGoals = 0; homeGoals <= 6; homeGoals += 1) {
-    for (let awayGoals = 0; awayGoals <= 6; awayGoals += 1) {
-      const probability =
-        poissonProbability(homeExpectedGoals, homeGoals) *
-        poissonProbability(awayExpectedGoals, awayGoals)
-      gridMass += probability
-      scoreGrid.push({ homeGoals, awayGoals, probability })
-    }
-  }
-
-  const normalizedGrid = scoreGrid
-    .map((entry) => ({ ...entry, probability: entry.probability / gridMass }))
-    .sort((left, right) => right.probability - left.probability)
-
-  let homeWin = 0
-  let draw = 0
-  let awayWin = 0
-  for (const entry of normalizedGrid) {
-    if (entry.homeGoals > entry.awayGoals) {
-      homeWin += entry.probability
-    } else if (entry.homeGoals === entry.awayGoals) {
-      draw += entry.probability
-    } else {
-      awayWin += entry.probability
-    }
-  }
-
-  const topScorelines = normalizedGrid.slice(0, 8)
-  const favorite = homeWin >= awayWin ? home : away
-  const favoriteProbability = Math.max(homeWin, awayWin)
-  const favoriteLabel =
-    favoriteProbability > 0.58 ? '明显优势' : favoriteProbability > 0.48 ? '轻微优势' : '接近五五开'
-  const likelyScoreText = topScorelines
-    .slice(0, 3)
-    .map((scoreline) => `${formatScoreline(scoreline.homeGoals, scoreline.awayGoals)} ${formatFinePercent(scoreline.probability)}`)
-    .join('、')
-
-  return {
-    home,
-    away,
-    stage: submitted.stage,
-    factors: weightedFactors,
-    homeExpectedGoals,
-    awayExpectedGoals,
-    homeWin,
-    draw,
-    awayWin,
-    scorelines: topScorelines,
-    headline: `${favorite.name_zh} ${favoriteLabel}`,
-    detail: `90分钟内更常见的比分集中在 ${likelyScoreText}。总进球预期 ${formatNumber(
-      homeExpectedGoals + awayExpectedGoals,
-    )} 球。`,
-  }
-}
-
-function MiniMetric(props: {
+function TeamSelect(props: {
   label: string
   value: string
-  hint?: string
+  teams: TeamData[]
+  onChange: (code: string) => void
+}) {
+  const selected = props.teams.find((team) => team.code === props.value)
+  return (
+    <label className="team-select">
+      <span>{props.label}</span>
+      <div>
+        {selected ? <img src={selected.flag_url} alt="" /> : null}
+        <select value={props.value} onChange={(event) => props.onChange(event.target.value)}>
+          {props.teams.map((team) => (
+            <option key={team.code} value={team.code}>{team.name_zh}</option>
+          ))}
+        </select>
+      </div>
+    </label>
+  )
+}
+
+function FootballScene() {
+  return (
+    <div className="football-scene" aria-hidden="true">
+      <div className="stadium-light stadium-light--left" />
+      <div className="stadium-light stadium-light--right" />
+      <div className="pitch-orbit pitch-orbit--one" />
+      <div className="pitch-orbit pitch-orbit--two" />
+      <div className="football">
+        <span>◆</span>
+      </div>
+      <div className="speed-line speed-line--one" />
+      <div className="speed-line speed-line--two" />
+    </div>
+  )
+}
+
+function MatchCard(props: {
+  match: LiveMatch
+  featured?: boolean
+  onPredict: (home: string, away: string) => void
 }) {
   return (
-    <article className="mini-metric">
-      <span>{props.label}</span>
-      <strong>{props.value}</strong>
-      {props.hint ? <p>{props.hint}</p> : null}
+    <article className={`match-card ${props.featured ? 'match-card--featured' : ''} ${props.match.state === 'in' ? 'is-live' : ''}`}>
+      <div className="match-card__meta">
+        <span className={props.match.state === 'in' ? 'live-label' : ''}>{statusText(props.match)}</span>
+        <span>{props.match.city || '世界杯赛场'}</span>
+      </div>
+      <div className="match-card__teams">
+        <div>
+          <img src={props.match.home.logo} alt="" />
+          <strong>{props.match.home.name_zh}</strong>
+        </div>
+        <b>{matchScore(props.match)}</b>
+        <div>
+          <img src={props.match.away.logo} alt="" />
+          <strong>{props.match.away.name_zh}</strong>
+        </div>
+      </div>
+      <div className="match-card__footer">
+        <span>{props.match.venue || '场地待确认'}</span>
+        <button type="button" onClick={() => props.onPredict(props.match.home.code, props.match.away.code)}>
+          预测这场
+        </button>
+      </div>
     </article>
   )
 }
 
-function FactorBar(props: {
-  label: string
-  note: string
-  homeValue: number
-  awayValue: number
-  delta: number
-  format?: 'number' | 'percent'
-}) {
-  const formatValue = props.format === 'percent' ? formatPercent : formatNumber
-  const directionClass = props.delta >= 0 ? 'is-home' : 'is-away'
-
+function NewsCard({ article, large = false }: { article: LiveArticle; large?: boolean }) {
   return (
-    <div className={`factor-bar ${directionClass}`}>
-      <div className="factor-bar__head">
-        <div>
-          <strong>{props.label}</strong>
-          <p>{props.note}</p>
+    <a className={`news-card ${large ? 'news-card--large' : ''}`} href={article.url} target="_blank" rel="noreferrer">
+      {article.image ? <img src={article.image} alt="" loading="lazy" /> : null}
+      <div>
+        <span>{article.source} · {chinaTime.format(new Date(article.published)).replace(',', '')}</span>
+        <h3>{article.headline_zh || article.headline}</h3>
+        {article.headline_zh ? <p>{article.headline}</p> : <p>原始英文标题 · 点击查看来源</p>}
+      </div>
+    </a>
+  )
+}
+
+function LiveTicker({ matches }: { matches: LiveMatch[] }) {
+  const items = matches.filter((match) => match.state !== 'pre').slice(0, 8)
+  if (!items.length) return null
+  return (
+    <div className="ticker" aria-label="实时比分">
+      <strong><i /> 实时</strong>
+      <div className="ticker__window">
+        <div className="ticker__track">
+          {[...items, ...items].map((match, index) => (
+            <span key={`${match.id}-${index}`}>
+              {match.home.name_zh} {match.home.score}-{match.away.score} {match.away.name_zh}
+            </span>
+          ))}
         </div>
-        <span>{props.delta >= 0 ? '主队占优' : '客队占优'}</span>
-      </div>
-      <div className="factor-bar__numbers">
-        <strong>{formatValue(props.homeValue)}</strong>
-        <span>{formatValue(props.awayValue)}</span>
-      </div>
-      <div className="factor-bar__track">
-        <div
-          className="factor-bar__fill"
-          style={{
-            width: `${Math.min(100, Math.max(12, 50 + Math.abs(props.delta) * 1.5))}%`,
-          }}
-        />
       </div>
     </div>
   )
 }
 
-function TeamChip(props: {
-  team: TeamData
-  active: boolean
-  onPick: (team: TeamData) => void
-}) {
+function ProbabilityBar({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
-    <button
-      type="button"
-      className={`team-chip ${props.active ? 'is-active' : ''}`}
-      onClick={() => props.onPick(props.team)}
-    >
-      <img src={props.team.flag_url} alt="" loading="lazy" />
-      <div>
-        <strong>
-          #{props.team.ranking} {props.team.name_zh}
-        </strong>
-        <span>
-          {props.team.group_name_zh} · {formatNumber(props.team.model.logic_score)}
-        </span>
-      </div>
-    </button>
+    <div className="probability-row">
+      <div><span>{label}</span><strong>{percent.format(value)}</strong></div>
+      <div className="probability-track"><i className={tone} style={{ width: `${value * 100}%` }} /></div>
+    </div>
   )
 }
 
-function TeamProfile(props: {
-  team: TeamData
-  role: string
+function HomePage(props: {
+  data: WorldCupData
+  live: LiveData
+  homeCode: string
+  awayCode: string
+  setHomeCode: (code: string) => void
+  setAwayCode: (code: string) => void
+  onPredict: (home?: string, away?: string) => void
 }) {
+  const recommendations = nextMatches(props.live.matches, props.data.teams)
   return (
-    <article className="profile-card">
-      <div className="profile-card__head">
-        <div className="profile-card__identity">
-          <img src={props.team.flag_url} alt="" loading="lazy" />
-          <div>
-            <span className="eyebrow">{props.role}</span>
-            <h3>{props.team.name_zh}</h3>
-            <p>
-              {props.team.group_name_zh} · {props.team.model.tier} · {topReasons(props.team)}
-            </p>
+    <div className="page page--home">
+      <section className="home-hero">
+        <FootballScene />
+        <div className="home-hero__copy">
+          <span className="overline"><i /> WORLD CUP LIVE LOGIC</span>
+          <h1>今晚看什么，<br />这场谁更可能赢。</h1>
+          <p>实时赛程、最新比分和球队状态持续进入模型。选择两支队伍，马上得到胜平负和精确比分概率。</p>
+          <div className="hero-composer">
+            <TeamSelect label="主队" value={props.homeCode} teams={props.data.teams} onChange={props.setHomeCode} />
+            <button className="swap-button" type="button" aria-label="交换球队" onClick={() => {
+              props.setHomeCode(props.awayCode)
+              props.setAwayCode(props.homeCode)
+            }}>⇄</button>
+            <TeamSelect label="客队" value={props.awayCode} teams={props.data.teams} onChange={props.setAwayCode} />
+            <button className="primary-button" type="button" onClick={() => props.onPredict()}>立即预测 <span>→</span></button>
           </div>
         </div>
-        <div className="profile-score">
-          <strong>{formatNumber(props.team.model.logic_score)}</strong>
-          <span>逻辑分</span>
+        <div className="hero-scoreboard">
+          <span>数据状态</span>
+          <strong>{props.live.source === 'live' ? 'LIVE' : '快照'}</strong>
+          <p>{props.data.tournament.matches_completed} 场已完成</p>
+          <small>最近同步 {shortTime.format(new Date(props.live.generated_at_utc))}</small>
+        </div>
+      </section>
+
+      <section className="home-section">
+        <div className="section-title">
+          <div><span className="overline">TONIGHT</span><h2>今晚与明晨，优先看这几场</h2></div>
+          <button type="button" onClick={() => navigate('matches')}>完整赛程 →</button>
+        </div>
+        <div className="recommendation-grid">
+          {recommendations.map((match, index) => (
+            <MatchCard key={match.id} match={match} featured={index === 0} onPredict={props.onPredict} />
+          ))}
+        </div>
+      </section>
+
+      <section className="home-section home-section--news">
+        <div className="section-title">
+          <div><span className="overline">LATEST SIGNALS</span><h2>世界杯正在发生</h2></div>
+          <span className="refresh-note">60 秒自动刷新</span>
+        </div>
+        <div className="news-grid">
+          {props.live.articles.slice(0, 4).map((article, index) => <NewsCard key={article.id} article={article} large={index === 0} />)}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function PredictionResult({ prediction }: { prediction: Prediction }) {
+  return (
+    <div className="prediction-result">
+      <div className="prediction-result__headline">
+        <div>
+          <span className="overline">90 分钟预测</span>
+          <h2>{prediction.headline}</h2>
+          <p>{prediction.detail}</p>
+        </div>
+        <div className="confidence-ring" style={{ '--confidence': `${prediction.confidence * 360}deg` } as React.CSSProperties}>
+          <strong>{percent.format(prediction.confidence)}</strong><span>模型信心</span>
         </div>
       </div>
 
-      <div className="profile-metrics">
-        <MiniMetric
-          label="历史 PPG"
-          value={formatNumber(props.team.history.ppg)}
-          hint={`${props.team.history.appearances} 次参赛`}
-        />
-        <MiniMetric
-          label="近况 PPG"
-          value={formatNumber(props.team.recent_form.weighted_ppg)}
-          hint={`${props.team.recent_form.matches_used} 场样本`}
-        />
-        <MiniMetric
-          label="名单年龄"
-          value={`${formatNumber(props.team.squad.avg_age)} 岁`}
-          hint={`平均 ${formatNumber(props.team.squad.avg_caps)} 场国脚经验`}
-        />
-        <MiniMetric
-          label="伤停负担"
-          value={`-${formatNumber(props.team.model.injury_penalty)}`}
-          hint={props.team.injuries.length ? `${props.team.injuries.length} 条关键伤停` : '暂无公开确认的关键伤停'}
-        />
+      <div className="versus-board">
+        <div><img src={prediction.home.flag_url} alt="" /><strong>{prediction.home.name_zh}</strong></div>
+        <div><span>预期进球</span><b>{number.format(prediction.homeExpectedGoals)} <em>:</em> {number.format(prediction.awayExpectedGoals)}</b></div>
+        <div><img src={prediction.away.flag_url} alt="" /><strong>{prediction.away.name_zh}</strong></div>
       </div>
 
-      <div className="profile-grid">
-        <section className="profile-box">
-          <div className="profile-box__head">
-            <h4>核心球员</h4>
-            <p>最能代表这支队伍的 5 人。</p>
-          </div>
-          <div className="player-stack">
-            {props.team.squad.key_players.map((player) => (
-              <article key={`${props.team.code}-${player.number}`}>
-                <strong>{player.shirt_name}</strong>
-                <span>
-                  {player.position_zh} · {player.club}
-                </span>
-                <em>
-                  {player.caps} 场 / {player.goals} 球
-                </em>
+      <div className="result-grid">
+        <div className="probability-card">
+          <h3>胜平负概率</h3>
+          <ProbabilityBar label={`${prediction.home.name_zh} 胜`} value={prediction.homeWin} tone="tone-home" />
+          <ProbabilityBar label="平局" value={prediction.draw} tone="tone-draw" />
+          <ProbabilityBar label={`${prediction.away.name_zh} 胜`} value={prediction.awayWin} tone="tone-away" />
+        </div>
+        <div className="score-radar">
+          <h3>最可能比分</h3>
+          <div>{prediction.scorelines.map((row, index) => (
+            <article className={index === 0 ? 'is-top' : ''} key={`${row.homeGoals}-${row.awayGoals}`}>
+              <strong>{row.homeGoals}-{row.awayGoals}</strong><span>{percent.format(row.probability)}</span>
+            </article>
+          ))}</div>
+        </div>
+      </div>
+
+      <section className="reason-section">
+        <div className="section-title"><div><span className="overline">WHY</span><h2>为什么是这个结果</h2></div></div>
+        <div className="reason-grid">
+          {prediction.factors.slice(0, 6).map((factor) => {
+            const homeEdge = factor.delta >= 0
+            const formatValue = (value: number) => factor.format === 'percent'
+              ? percent.format(value)
+              : number.format(value)
+            return (
+              <article key={factor.label}>
+                <span>{homeEdge ? prediction.home.name_zh : prediction.away.name_zh} 占优</span>
+                <h3>{factor.label}</h3>
+                <p>{factor.note}</p>
+                <div><strong>{formatValue(factor.homeValue)}</strong><i /><strong>{formatValue(factor.awayValue)}</strong></div>
               </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="profile-box">
-          <div className="profile-box__head">
-            <h4>最近 4 场</h4>
-            <p>北京时间。</p>
-          </div>
-          <ul className="fixture-stack">
-            {props.team.recent_form.matches.slice(0, 4).map((match) => (
-              <li key={`${props.team.code}-${match.date_utc}-${match.opponent_code}`}>
-                <span>{formatChinaTime(match.date_utc)}</span>
-                <strong>{matchLabel(match)}</strong>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="profile-box">
-          <div className="profile-box__head">
-            <h4>伤停</h4>
-            <p>只列可追踪的重点条目。</p>
-          </div>
-          {props.team.injuries.length ? (
-            <ul className="injury-stack">
-              {props.team.injuries.slice(0, 4).map((injury) => (
-                <li key={`${props.team.code}-${injury.player}`}>
-                  <strong>{injury.player}</strong>
-                  <span>{injury.status}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="empty-state">暂无公开确认的关键伤停。</p>
-          )}
-        </section>
-
-        <section className="profile-box profile-box--roster">
-          <details>
-            <summary>
-              <div>
-                <h4>26 人完整名单</h4>
-                <p>号码、俱乐部、年龄、场次和进球全部展开。</p>
-              </div>
-              <span>展开</span>
-            </summary>
-            <div className="table-scroll">
-              <table className="roster-table">
-                <thead>
-                  <tr>
-                    <th>号</th>
-                    <th>位置</th>
-                    <th>球员</th>
-                    <th>俱乐部</th>
-                    <th>年龄</th>
-                    <th>场次</th>
-                    <th>进球</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {props.team.squad.players.map((player) => (
-                    <tr key={`${props.team.code}-${player.number}`}>
-                      <td>{player.number}</td>
-                      <td>{player.position_zh}</td>
-                      <td>
-                        <div className="player-cell">
-                          <strong>{player.shirt_name}</strong>
-                          <span>{player.player_name}</span>
-                        </div>
-                      </td>
-                      <td>{player.club}</td>
-                      <td>{player.age}</td>
-                      <td>{player.caps}</td>
-                      <td>{player.goals}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </details>
-        </section>
-      </div>
-    </article>
+            )
+          })}
+        </div>
+      </section>
+    </div>
   )
 }
 
-function PredictionApp() {
-  const [data, setData] = useState<WorldCupData | null>(null)
-  const [error, setError] = useState('')
-  const [homeInput, setHomeInput] = useState('')
-  const [awayInput, setAwayInput] = useState('')
-  const [stage, setStage] = useState<Stage>('group')
-  const [submitted, setSubmitted] = useState<SubmittedMatch | null>(null)
-  const [slot, setSlot] = useState<Slot>('home')
-  const [feedback, setFeedback] = useState('')
-  const [groupFilter, setGroupFilter] = useState('全部')
-  const [search, setSearch] = useState('')
-  const deferredSearch = useDeferredValue(search)
-
-  const dataUrl = `${import.meta.env.BASE_URL}world-cup-data.json`
-
-  useEffect(() => {
-    let active = true
-
-    fetch(dataUrl)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`数据载入失败：${response.status}`)
-        }
-        return response.json() as Promise<WorldCupData>
-      })
-      .then((payload) => {
-        if (!active) {
-          return
-        }
-
-        setData(payload)
-        const [first, second] = payload.overview.top_contenders
-        setHomeInput((current) => current || first?.name_zh || '')
-        setAwayInput((current) => current || second?.name_zh || '')
-        setSubmitted((current) =>
-          current ?? {
-            homeCode: first?.code || payload.teams[0]?.code || '',
-            awayCode: second?.code || payload.teams[1]?.code || '',
-            stage: 'group',
-          },
-        )
-      })
-      .catch((fetchError) => {
-        if (active) {
-          setError(fetchError instanceof Error ? fetchError.message : '数据载入失败')
-        }
-      })
-
-    return () => {
-      active = false
-    }
-  }, [dataUrl])
-
-  const groupOptions = data ? ['全部', ...data.groups.map((group) => group.group_name_zh)] : ['全部']
-
-  const filteredTeams = data
-    ? data.teams.filter((team) => {
-        const matchesGroup = groupFilter === '全部' || team.group_name_zh === groupFilter
-        if (!matchesGroup) {
-          return false
-        }
-
-        const token = normalizeToken(deferredSearch)
-        if (!token) {
-          return true
-        }
-
-        return [
-          team.name_zh,
-          team.name_en,
-          team.code,
-          team.group_name_zh,
-          team.model.tier,
-        ]
-          .join(' ')
-          .toLowerCase()
-          .includes(token)
-      })
-    : []
-
-  const homeTeam = data ? resolveTeam(data, homeInput) : null
-  const awayTeam = data ? resolveTeam(data, awayInput) : null
-  const prediction =
-    data && submitted
-      ? buildPrediction(data, submitted)
-      : null
-
-  const selectedHome = homeTeam
-  const selectedAway = awayTeam
-  let selectedPairChanged = false
-  if (submitted && homeTeam && awayTeam) {
-    selectedPairChanged =
-      submitted.homeCode !== homeTeam.code || submitted.awayCode !== awayTeam.code || submitted.stage !== stage
-  }
-
-  const allPlayers = data?.teams.reduce((sum, team) => sum + team.squad.size, 0) ?? 0
-
-  function pickTeam(team: TeamData) {
-    if (slot === 'home') {
-      setHomeInput(team.name_zh)
-    } else {
-      setAwayInput(team.name_zh)
-    }
-  }
-
-  function submitPrediction() {
-    if (!data) {
-      return
-    }
-
-    const nextHome = resolveTeam(data, homeInput)
-    const nextAway = resolveTeam(data, awayInput)
-
-    if (!nextHome || !nextAway) {
-      setFeedback('请先把两支球队填成可识别的名称、英文名或代码。')
-      return
-    }
-
-    if (nextHome.code === nextAway.code) {
-      setFeedback('主队和客队不能是同一支球队。')
-      return
-    }
-
-    setSubmitted({
-      homeCode: nextHome.code,
-      awayCode: nextAway.code,
-      stage,
-    })
-    setFeedback('')
-  }
-
-  function fillHotPair(homeName: string, awayName: string) {
-    setHomeInput(homeName)
-    setAwayInput(awayName)
-    setFeedback('')
-  }
-
-  if (error) {
-    return (
-      <main className="match-app match-app--center">
-        <section className="error-card">
-          <span className="eyebrow">载入失败</span>
-          <h1>世界杯数据没有成功读出来。</h1>
-          <p>{error}</p>
-        </section>
-      </main>
-    )
-  }
-
-  if (!data) {
-    return (
-      <main className="match-app match-app--center">
-        <section className="loading-card">
-          <span className="eyebrow">正在接入赛会数据</span>
-          <h1>正在读取 48 支球队、名单和伤停。</h1>
-          <p>第一次加载会把整份静态数据拉进来。</p>
-        </section>
-      </main>
-    )
-  }
-
+function PredictPage(props: {
+  data: WorldCupData
+  homeCode: string
+  awayCode: string
+  stage: Stage
+  prediction: Prediction | null
+  setHomeCode: (code: string) => void
+  setAwayCode: (code: string) => void
+  setStage: (stage: Stage) => void
+  onSubmit: () => void
+}) {
   return (
-    <main className="match-app">
-      <section className="hero-panel">
-        <div className="hero-panel__copy">
-          <span className="eyebrow">世界杯对阵预测器</span>
-          <h1>把两支队伍放上场，直接算出胜负和比分概率。</h1>
-          <p>
-            只用公开数据和可解释规则。历史、近况、名单、伤停、赛会走势都会进模型，结果会给出胜平负、最可能比分和原因。
-          </p>
-          <ul className="hero-tags">
-            <li>纯逻辑</li>
-            <li>90 分钟结果</li>
-            <li>比分雷达</li>
-            <li>48 支球队</li>
-          </ul>
-        </div>
-
-        <div className="hero-panel__stats">
-          <MiniMetric
-            label="已纳入球员"
-            value={`${allPlayers}`}
-            hint="完整 26 人名单"
-          />
-          <MiniMetric
-            label="当前伤停"
-            value={`${data.injuries.length}`}
-            hint="公开可核重点条目"
-          />
-          <MiniMetric
-            label="已完赛"
-            value={`${data.tournament.matches_completed}/${data.tournament.matches_total}`}
-            hint={data.tournament.group_format_zh}
-          />
-        </div>
+    <div className="page">
+      <header className="page-heading"><span className="overline">MATCH LAB</span><h1>对阵预测</h1><p>每次点击都会按当前球队状态重新计算。</p></header>
+      <section className="prediction-composer">
+        <TeamSelect label="主队" value={props.homeCode} teams={props.data.teams} onChange={props.setHomeCode} />
+        <button className="swap-button" type="button" onClick={() => {
+          props.setHomeCode(props.awayCode)
+          props.setAwayCode(props.homeCode)
+        }}>⇄</button>
+        <TeamSelect label="客队" value={props.awayCode} teams={props.data.teams} onChange={props.setAwayCode} />
+        <label className="stage-select"><span>比赛阶段</span><select value={props.stage} onChange={(event) => props.setStage(event.target.value as Stage)}><option value="group">小组赛</option><option value="knockout">淘汰赛</option></select></label>
+        <button className="primary-button" type="button" onClick={props.onSubmit}>开始计算 <span>→</span></button>
       </section>
+      {props.prediction ? <PredictionResult prediction={props.prediction} /> : null}
+    </div>
+  )
+}
 
-      <section className="studio-grid">
-        <article className="control-panel">
-          <div className="section-head section-head--tight">
-            <div>
-              <span className="eyebrow">对阵输入</span>
-              <h2>填队伍，然后点预测</h2>
-            </div>
-            <p>支持中文名、英文名或代码。也可以点击下面的球队卡片直接填入。</p>
-          </div>
-
-          <div className="slot-switch">
-            <button
-              type="button"
-              className={slot === 'home' ? 'is-active' : ''}
-              onClick={() => setSlot('home')}
-            >
-              当前填主队
-            </button>
-            <button
-              type="button"
-              className={slot === 'away' ? 'is-active' : ''}
-              onClick={() => setSlot('away')}
-            >
-              当前填客队
-            </button>
-          </div>
-
-          <div className="match-inputs">
-            <label>
-              <span>主队</span>
-              <input
-                list="team-names"
-                value={homeInput}
-                placeholder="例如：阿根廷 / ARG / Argentina"
-                onChange={(event) => {
-                  const nextValue = event.target.value
-                  startTransition(() => {
-                    setHomeInput(nextValue)
-                  })
-                }}
-              />
-            </label>
-            <label>
-              <span>客队</span>
-              <input
-                list="team-names"
-                value={awayInput}
-                placeholder="例如：法国 / FRA / France"
-                onChange={(event) => {
-                  const nextValue = event.target.value
-                  startTransition(() => {
-                    setAwayInput(nextValue)
-                  })
-                }}
-              />
-            </label>
-          </div>
-
-          <div className="match-controls">
-            <label>
-              <span>比赛阶段</span>
-              <select
-                value={stage}
-                onChange={(event) => {
-                  const nextStage = event.target.value as Stage
-                  startTransition(() => {
-                    setStage(nextStage)
-                  })
-                }}
-              >
-                <option value="group">小组赛 90 分钟</option>
-                <option value="knockout">淘汰赛 90 分钟</option>
-              </select>
-            </label>
-
-            <button type="button" className="predict-button" onClick={submitPrediction}>
-              预测这场比赛
-            </button>
-          </div>
-
-          {feedback ? <p className="feedback">{feedback}</p> : null}
-
-          <div className="hot-pairs">
-            <button type="button" onClick={() => fillHotPair('阿根廷', '法国')}>
-              阿根廷 vs 法国
-            </button>
-            <button type="button" onClick={() => fillHotPair('巴西', '西班牙')}>
-              巴西 vs 西班牙
-            </button>
-            <button type="button" onClick={() => fillHotPair('英格兰', '德国')}>
-              英格兰 vs 德国
-            </button>
-            <button type="button" onClick={() => fillHotPair('葡萄牙', '荷兰')}>
-              葡萄牙 vs 荷兰
-            </button>
-          </div>
-        </article>
-
-        <article className="prediction-panel">
-          <div className="section-head section-head--tight">
-            <div>
-              <span className="eyebrow">预测结果</span>
-              <h2>{prediction ? prediction.headline : '等待预测'}</h2>
-            </div>
-            <p>{prediction ? prediction.detail : '请先填入两支球队并点击预测。'}</p>
-          </div>
-
-          {prediction ? (
-            <>
-              <div className="result-board">
-                <div className="result-board__scoreline">
-                  <div>
-                    <img src={prediction.home.flag_url} alt="" loading="lazy" />
-                    <strong>{prediction.home.name_zh}</strong>
-                    <span>{prediction.home.group_name_zh}</span>
-                  </div>
-                  <div className="result-board__middle">
-                    <em>90 分钟</em>
-                    <strong>
-                      {formatNumber(prediction.homeExpectedGoals)} : {formatNumber(prediction.awayExpectedGoals)}
-                    </strong>
-                    <span>{prediction.stage === 'knockout' ? '淘汰赛模型' : '小组赛模型'}</span>
-                  </div>
-                  <div>
-                    <img src={prediction.away.flag_url} alt="" loading="lazy" />
-                    <strong>{prediction.away.name_zh}</strong>
-                    <span>{prediction.away.group_name_zh}</span>
-                  </div>
-                </div>
-
-                <div className="result-bars">
-                  <div className="prob-row">
-                    <span>主胜</span>
-                    <strong>{formatPercent(prediction.homeWin)}</strong>
-                  </div>
-                  <div className="prob-track">
-                    <div className="prob-fill prob-fill--home" style={{ width: `${prediction.homeWin * 100}%` }} />
-                  </div>
-
-                  <div className="prob-row">
-                    <span>平局</span>
-                    <strong>{formatPercent(prediction.draw)}</strong>
-                  </div>
-                  <div className="prob-track">
-                    <div className="prob-fill prob-fill--draw" style={{ width: `${prediction.draw * 100}%` }} />
-                  </div>
-
-                  <div className="prob-row">
-                    <span>客胜</span>
-                    <strong>{formatPercent(prediction.awayWin)}</strong>
-                  </div>
-                  <div className="prob-track">
-                    <div className="prob-fill prob-fill--away" style={{ width: `${prediction.awayWin * 100}%` }} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="scoreline-panel">
-                <div className="profile-box__head">
-                  <h3>比分雷达</h3>
-                  <p>最可能的 8 个精确比分。</p>
-                </div>
-                <div className="scoreline-grid">
-                  {prediction.scorelines.map((scoreline, index) => (
-                    <article
-                      key={`${scoreline.homeGoals}-${scoreline.awayGoals}`}
-                      className={`scoreline-chip ${index === 0 ? 'is-top' : ''}`}
-                    >
-                      <strong>{formatScoreline(scoreline.homeGoals, scoreline.awayGoals)}</strong>
-                      <span>{formatFinePercent(scoreline.probability)}</span>
-                    </article>
-                  ))}
-                </div>
-              </div>
-
-              <div className="factor-panel">
-                <div className="profile-box__head">
-                  <h3>为什么会这么判</h3>
-                  <p>每一条都能追到原始数据。</p>
-                </div>
-                <div className="factor-list">
-                  {prediction.factors.slice(0, 6).map((factor) => (
-                    <FactorBar
-                      key={factor.label}
-                      label={factor.label}
-                      note={factor.note}
-                      homeValue={factor.homeValue}
-                      awayValue={factor.awayValue}
-                      delta={factor.delta}
-                      format={factor.format}
-                    />
-                  ))}
-                </div>
-              </div>
-            </>
-          ) : null}
-        </article>
-      </section>
-
-      <section className="catalog-panel">
-        <div className="section-head section-head--tight">
-          <div>
-            <span className="eyebrow">球队库</span>
-            <h2>48 支队伍，随便点一支就能塞进模型</h2>
-          </div>
-          <p>先筛选，再点卡片，主队/客队会按照当前按钮状态自动填入。</p>
-        </div>
-
-        <div className="catalog-toolbar">
-          <label>
-            <span>搜索球队 / 教练 / 档位</span>
-            <input
-              type="search"
-              placeholder="例如：巴西、J 组、争冠第一梯队"
-              value={search}
-              onChange={(event) => {
-                const nextValue = event.target.value
-                startTransition(() => {
-                  setSearch(nextValue)
-                })
-              }}
-            />
-          </label>
-
-          <label>
-            <span>按小组筛选</span>
-            <select
-              value={groupFilter}
-              onChange={(event) => {
-                startTransition(() => {
-                  setGroupFilter(event.target.value)
-                })
-              }}
-            >
-              {groupOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="team-grid">
-          {filteredTeams.map((team) => (
-            <TeamChip
-              key={team.code}
-              team={team}
-              active={homeTeam?.code === team.code || awayTeam?.code === team.code}
-              onPick={pickTeam}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className="profile-grid-section">
-        <div className="section-head section-head--tight">
-          <div>
-            <span className="eyebrow">深度档案</span>
-            <h2>你选的这两支队伍，详细信息都在这里</h2>
-          </div>
-          <p>
-            {selectedPairChanged
-              ? '输入已经改了，但结果还没重新跑。点一次“预测这场比赛”会更新右侧结果。'
-              : '右侧结果和这两张卡片保持一致。'}
-          </p>
-        </div>
-
-        <div className="profile-grid-section__content">
-          {selectedHome ? <TeamProfile team={selectedHome} role="主队" /> : null}
-          {selectedAway ? <TeamProfile team={selectedAway} role="客队" /> : null}
-        </div>
-      </section>
-
-      <section className="source-panel">
-        <div className="section-head section-head--tight">
-          <div>
-            <span className="eyebrow">方法与来源</span>
-            <h2>公开数据，透明规则</h2>
-          </div>
-          <p>只保留会影响比赛判断的信息。</p>
-        </div>
-
-        <ul className="source-list">
-          {data.sources.slice(0, 3).map((source) => (
-            <li key={source.url}>
-              <strong>{source.label}</strong>
-              <span>{source.type}</span>
-              <a href={source.url} target="_blank" rel="noreferrer">
-                查看来源
-              </a>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <datalist id="team-names">
-        {data.teams.map((team) => (
-          <option key={team.code} value={team.name_zh} />
+function MatchesPage(props: { live: LiveData; onPredict: (home: string, away: string) => void }) {
+  const [filter, setFilter] = useState<'all' | 'live' | 'upcoming' | 'finished'>('all')
+  const filtered = props.live.matches.filter((match) => {
+    if (filter === 'live') return match.state === 'in'
+    if (filter === 'upcoming') return match.state === 'pre'
+    if (filter === 'finished') return match.state === 'post'
+    return true
+  })
+  return (
+    <div className="page">
+      <header className="page-heading"><span className="overline">LIVE FIXTURES</span><h1>实时赛程</h1><p>北京时间显示，比分每 60 秒同步。</p></header>
+      <div className="filter-tabs">
+        {([['all', '全部'], ['live', '进行中'], ['upcoming', '未开球'], ['finished', '已结束']] as const).map(([value, label]) => (
+          <button key={value} className={filter === value ? 'is-active' : ''} type="button" onClick={() => setFilter(value)}>{label}</button>
         ))}
-      </datalist>
+      </div>
+      <div className="fixtures-list">
+        {filtered.map((match) => <MatchCard key={match.id} match={match} onPredict={props.onPredict} />)}
+      </div>
+    </div>
+  )
+}
+
+function TeamDetail({ team }: { team: TeamData }) {
+  return (
+    <div className="page">
+      <button className="back-button" type="button" onClick={() => navigate('teams')}>← 返回球队库</button>
+      <section className="team-hero">
+        <img src={team.flag_url} alt="" />
+        <div><span className="overline">{team.group_name_zh}</span><h1>{team.name_zh}</h1><p>{team.model.tier} · 主教练 {team.coach_name}</p></div>
+        <div className="team-logic"><strong>{number.format(team.model.logic_score)}</strong><span>逻辑分</span></div>
+      </section>
+      <div className="team-metrics">
+        <article><span>世界杯历史 PPG</span><strong>{number.format(team.history.ppg)}</strong><p>{team.history.appearances} 次参赛</p></article>
+        <article><span>近期 PPG</span><strong>{number.format(team.recent_form.weighted_ppg)}</strong><p>{team.recent_form.matches_used} 场样本</p></article>
+        <article><span>本届积分</span><strong>{team.current_tournament.points}</strong><p>{team.current_tournament.matches_played} 场比赛</p></article>
+        <article><span>伤停扣分</span><strong>{number.format(team.model.injury_penalty)}</strong><p>{team.injuries.length} 条重点动态</p></article>
+      </div>
+      <div className="team-detail-grid">
+        <section className="detail-panel"><h2>关键球员</h2><div className="player-list">{team.squad.key_players.map((player) => <article key={player.number}><b>{player.number}</b><div><strong>{player.shirt_name}</strong><span>{player.position_zh} · {player.club}</span></div><em>{player.caps} 场 / {player.goals} 球</em></article>)}</div></section>
+        <section className="detail-panel"><h2>伤停与负荷</h2>{team.injuries.length ? <div className="injury-list">{team.injuries.map((injury) => <article key={injury.player}><span>{injury.status}</span><strong>{injury.player}</strong><p>{injury.detail}</p></article>)}</div> : <p className="empty-copy">暂无公开确认的重点伤停。</p>}</section>
+        <section className="detail-panel detail-panel--wide"><details><summary><div><h2>完整 26 人名单</h2><p>展开查看号码、俱乐部、年龄、场次与进球。</p></div><span>展开 +</span></summary><div className="roster-grid">{team.squad.players.map((player) => <article key={player.number}><b>{player.number}</b><div><strong>{player.shirt_name}</strong><span>{player.position_zh} · {player.club}</span></div><em>{player.age} 岁</em></article>)}</div></details></section>
+      </div>
+    </div>
+  )
+}
+
+function TeamsPage({ data }: { data: WorldCupData }) {
+  const [query, setQuery] = useState('')
+  const deferred = useDeferredValue(query.trim().toLowerCase())
+  const teams = data.teams.filter((team) => !deferred || `${team.name_zh} ${team.name_en} ${team.code}`.toLowerCase().includes(deferred))
+  return (
+    <div className="page">
+      <header className="page-heading page-heading--with-search"><div><span className="overline">48 TEAMS</span><h1>球队资料库</h1><p>深度资料放在独立页面，首页不再承载全部数据。</p></div><input type="search" value={query} onChange={(event) => startTransition(() => setQuery(event.target.value))} placeholder="搜索球队" /></header>
+      <div className="team-library">{teams.map((team) => <button key={team.code} type="button" onClick={() => navigate(`team/${team.code}`)}><img src={team.flag_url} alt="" /><div><span>#{team.ranking} · {team.group_name_zh}</span><strong>{team.name_zh}</strong><p>{team.model.tier}</p></div><b>{number.format(team.model.logic_score)}</b></button>)}</div>
+    </div>
+  )
+}
+
+function AppShell(props: { route: Route; live: LiveData; children: React.ReactNode }) {
+  const current = props.route.startsWith('team/') ? 'teams' : props.route
+  const nav = [['home', '首页'], ['predict', '预测'], ['matches', '赛程'], ['teams', '球队']] as const
+  return (
+    <main className="world-cup-app">
+      <header className="site-header">
+        <button className="brand" type="button" onClick={() => navigate('home')}><span className="brand-ball">◆</span><div><strong>球局</strong><small>WORLD CUP LOGIC</small></div></button>
+        <nav>{nav.map(([route, label]) => <button className={current === route ? 'is-active' : ''} type="button" key={route} onClick={() => navigate(route)}>{label}</button>)}</nav>
+        <div className="data-status"><i className={props.live.source === 'live' ? 'is-live' : ''} /><span>{props.live.source === 'live' ? '实时连接' : '快照模式'}</span><small>{shortTime.format(new Date(props.live.generated_at_utc))}</small></div>
+      </header>
+      <LiveTicker matches={props.live.matches} />
+      <div key={props.route} className="route-stage">{props.children}</div>
+      <nav className="mobile-nav">{nav.map(([route, label]) => <button className={current === route ? 'is-active' : ''} type="button" key={route} onClick={() => navigate(route)}><i />{label}</button>)}</nav>
     </main>
   )
 }
 
-export default PredictionApp
+export default function App() {
+  const [route, setRoute] = useState<Route>(getRoute)
+  const [data, setData] = useState<WorldCupData | null>(null)
+  const [live, setLive] = useState<LiveData | null>(null)
+  const [error, setError] = useState('')
+  const [homeCode, setHomeCode] = useState('ARG')
+  const [awayCode, setAwayCode] = useState('FRA')
+  const [stage, setStage] = useState<Stage>('group')
+  const [prediction, setPrediction] = useState<Prediction | null>(null)
+
+  useEffect(() => {
+    const handleHash = () => setRoute(getRoute())
+    window.addEventListener('hashchange', handleHash)
+    return () => window.removeEventListener('hashchange', handleHash)
+  }, [])
+
+  useEffect(() => {
+    fetch('./world-cup-data.json')
+      .then((response) => {
+        if (!response.ok) throw new Error(`核心数据载入失败：${response.status}`)
+        return response.json() as Promise<WorldCupData>
+      })
+      .then((payload) => {
+        setData(payload)
+        const first = payload.overview.top_contenders[0]?.code ?? payload.teams[0].code
+        const second = payload.overview.top_contenders[1]?.code ?? payload.teams[1].code
+        setHomeCode(first)
+        setAwayCode(second)
+        setPrediction(buildPrediction(payload, first, second, 'group'))
+      })
+      .catch((reason) => setError(reason instanceof Error ? reason.message : '核心数据载入失败'))
+  }, [])
+
+  useEffect(() => {
+    if (!data) return
+    let active = true
+    const refresh = () => loadLiveData(data.teams).then((payload) => active && setLive(payload)).catch(() => {})
+    refresh()
+    const timer = window.setInterval(refresh, 60_000)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
+  }, [data])
+
+  function runPrediction(home = homeCode, away = awayCode) {
+    if (!data) return
+    setHomeCode(home)
+    setAwayCode(away)
+    setPrediction(buildPrediction(data, home, away, stage))
+    navigate('predict')
+  }
+
+  if (error) return <main className="loading-screen"><span>数据连接失败</span><h1>页面没有拿到世界杯数据。</h1><p>{error}</p></main>
+  if (!data || !live) return <main className="loading-screen"><div className="loading-ball">◆</div><span>正在连接世界杯现场</span><h1>同步赛程、比分与球队状态。</h1></main>
+
+  const teamCode = route.startsWith('team/') ? route.split('/')[1] : ''
+  const team = data.teams.find((item) => item.code === teamCode)
+  let content: React.ReactNode
+  if (route === 'predict') content = <PredictPage data={data} homeCode={homeCode} awayCode={awayCode} stage={stage} prediction={prediction} setHomeCode={setHomeCode} setAwayCode={setAwayCode} setStage={setStage} onSubmit={() => runPrediction()} />
+  else if (route === 'matches') content = <MatchesPage live={live} onPredict={runPrediction} />
+  else if (route === 'teams') content = <TeamsPage data={data} />
+  else if (team) content = <TeamDetail team={team} />
+  else content = <HomePage data={data} live={live} homeCode={homeCode} awayCode={awayCode} setHomeCode={setHomeCode} setAwayCode={setAwayCode} onPredict={runPrediction} />
+
+  return <AppShell route={route} live={live}>{content}</AppShell>
+}

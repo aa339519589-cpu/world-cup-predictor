@@ -193,3 +193,43 @@ export type WorldCupData = {
   injuries: InjuryEntry[]
   teams: TeamData[]
 }
+
+export type LiveMatchTeam = {
+  code: string
+  name_zh: string
+  name_en: string
+  logo: string
+  score: number
+}
+
+export type LiveMatch = {
+  id: string
+  date_utc: string
+  state: 'pre' | 'in' | 'post'
+  status: string
+  clock: string
+  completed: boolean
+  venue: string
+  city: string
+  home: LiveMatchTeam
+  away: LiveMatchTeam
+}
+
+export type LiveArticle = {
+  id: string
+  headline: string
+  headline_zh: string
+  description: string
+  published: string
+  image: string
+  url: string
+  teams: string[]
+  source: string
+}
+
+export type LiveData = {
+  generated_at_utc: string
+  source: 'live' | 'snapshot'
+  matches: LiveMatch[]
+  articles: LiveArticle[]
+}
