@@ -29,6 +29,38 @@
   padding-top: 54px;
 }
 
+.page--home > .home-section:not(.home-section--news) .section-title {
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.page--home > .home-section:not(.home-section--news) .section-title .overline,
+.page--home > .home-section:not(.home-section--news) .section-title button {
+  display: none !important;
+}
+
+.page--home > .home-section:not(.home-section--news) .section-title h2 {
+  margin: 0;
+  color: rgba(16, 36, 28, 0.72);
+  font-size: 0;
+  font-family: inherit;
+  letter-spacing: 0;
+}
+
+.page--home > .home-section:not(.home-section--news) .section-title h2::before {
+  content: '赛程';
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid rgba(16, 48, 36, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.54);
+  color: rgba(16, 36, 28, 0.64);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
 .mobile-nav {
   position: fixed;
   z-index: 999;
@@ -100,7 +132,11 @@
   }
 
   .home-hero + .home-section {
-    padding-top: 46px;
+    padding-top: 40px;
+  }
+
+  .page--home > .home-section:not(.home-section--news) .section-title {
+    margin-bottom: 10px;
   }
 
   .mobile-nav {
