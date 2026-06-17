@@ -33,6 +33,7 @@ jobs:
       - run: python3 scripts/build_market_data.py
         env:
           THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+      - run: python3 scripts/build_source_registry.py
       - run: npm run api:build
       - run: npm run build
       - uses: actions/configure-pages@v5
