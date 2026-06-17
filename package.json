@@ -7,8 +7,9 @@
     "dev": "vite",
     "data:refresh": "python3 scripts/build_worldcup_data.py",
     "data:market": "python3 scripts/build_market_data.py",
+    "data:sources": "python3 scripts/build_source_registry.py",
     "api:build": "tsx scripts/build_prediction_api.ts",
-    "data:all": "python3 scripts/build_live_data.py && python3 scripts/build_market_data.py && npm run api:build",
+    "data:all": "python3 scripts/build_live_data.py && python3 scripts/build_market_data.py && python3 scripts/build_source_registry.py && npm run api:build",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
