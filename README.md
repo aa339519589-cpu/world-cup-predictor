@@ -45,3 +45,7 @@ npm run lint
 - `/api/odds.json`
 
 GitHub Actions 每 10 分钟刷新数据、重建 API 并部署 GitHub Pages。
+
+```
+
+Agent PR test 2026-06-24
